@@ -16,3 +16,43 @@ body {
 	cursor: pointer;
 	font-size: 12px;
 }
+
+/* 검색바 및 검색 결과 강조 */
+#search-bar {
+	position: fixed;
+	top: 0;
+	right: 16px;
+	z-index: 1000;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 6px;
+	background: #f3f3f3;
+	border: 1px solid #c8c8c8;
+	border-top: none;
+	border-radius: 0 0 4px 4px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+	font-size: 12px;
+}
+#search-input {
+	width: 180px;
+	padding: 2px 4px;
+	font-size: 13px;
+}
+#search-count {
+	min-width: 40px;
+	text-align: center;
+	color: #555;
+}
+#search-bar button {
+	padding: 0 6px;
+	font-size: 11px;
+	cursor: pointer;
+}
+mark.kc-hit {
+	background: #ffe58f;
+	color: inherit;
+	padding: 0;
+}
+mark.kc-hit-active {
+	background: #ff9632;
+}

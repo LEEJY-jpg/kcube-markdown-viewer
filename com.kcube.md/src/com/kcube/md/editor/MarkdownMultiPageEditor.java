@@ -134,6 +134,15 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 	}
 
 	/**
+	 * Preview 탭의 검색바를 연다. Preview 가 없으면 아무 일도 하지 않는다.
+	 */
+	public void openPreviewSearch() {
+		if (_preview != null) {
+			_preview.openSearch();
+		}
+	}
+
+	/**
 	 * @return 편집 중인 문서 (없으면 null)
 	 */
 	private IDocument getDocument() {

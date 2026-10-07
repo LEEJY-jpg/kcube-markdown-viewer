@@ -70,6 +70,9 @@ function renderMarkdown(markdown, baseUri) {
 	content.innerHTML = md.render(markdown || '');
 	resolveImages(baseUri);
 	window.scrollTo(scrollX, scrollY);
+	if (typeof reapplySearch === 'function') {
+		reapplySearch();
+	}
 }
 
 /**

@@ -1,5 +1,6 @@
 package com.kcube.md.editor;
 
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorPart;
@@ -24,6 +25,19 @@ public class MarkdownEditorContributor extends MultiPageEditorActionBarContribut
 			ActionFactory.FIND.getId()
 	};
 
+	/** Preview 탭이 활성일 때 Find 에 연결할 검색바 열기 액션 */
+	private final IAction _previewFind = new Action() {
+		/**
+		 * 활성 에디터의 Preview 검색바를 연다.
+		 */
+		@Override
+		public void run() {
+			if (getPage() != null && getPage().getActiveEditor() instanceof MarkdownMultiPageEditor editor) {
+				editor.openPreviewSearch();
+			}
+		}
+	};
+
 	/**
 	 * 활성 페이지가 바뀔 때 전역 액션 핸들러를 갈아 끼운다.
 	 *
@@ -38,6 +52,9 @@ public class MarkdownEditorContributor extends MultiPageEditorActionBarContribut
 		ITextEditor textEditor = activeEditor instanceof ITextEditor te ? te : null;
 		for (String id : GLOBAL_ACTIONS) {
 			IAction action = textEditor == null ? null : textEditor.getAction(id);
+			if (textEditor == null && id.equals(ActionFactory.FIND.getId())) {
+				action = _previewFind;
+			}
 			bars.setGlobalActionHandler(id, action);
 		}
 		bars.updateActionBars();

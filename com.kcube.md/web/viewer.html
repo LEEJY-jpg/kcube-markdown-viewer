@@ -10,9 +10,17 @@
 <link rel="stylesheet" href="css/viewer.css">
 </head>
 <body>
+<div id="search-bar" style="display:none">
+<input id="search-input" type="text" placeholder="Search" spellcheck="false">
+<span id="search-count"></span>
+<button id="search-prev" type="button" title="Previous (Shift+Enter)">&#9650;</button>
+<button id="search-next" type="button" title="Next (Enter)">&#9660;</button>
+<button id="search-close" type="button" title="Close (Esc)">&#10005;</button>
+</div>
 <div id="content" class="MarkDownViewer"></div>
 <script src="js/markdown-it.min.js"></script>
 <script src="js/highlight.min.js"></script>
 <script src="js/viewer.js"></script>
+<script src="js/search.js"></script>
 </body>
 </html>

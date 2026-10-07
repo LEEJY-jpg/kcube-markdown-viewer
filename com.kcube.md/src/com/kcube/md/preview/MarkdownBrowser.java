@@ -111,6 +111,19 @@ public class MarkdownBrowser {
 	}
 
 	/**
+	 * 미리보기 안의 검색바를 열고 포커스를 준다.
+	 */
+	public void openSearch() {
+		if (!_ready || _browser.isDisposed()) {
+			return;
+		}
+		_browser.setFocus();
+		if (!_browser.execute("openSearch();") && _log.isWarnEnabled()) {
+			_log.warn("Failed to execute openSearch script");
+		}
+	}
+
+	/**
 	 * 보관 중인 Markdown 을 JS 의 renderMarkdown() 으로 전달한다.
 	 */
 	private void apply() {
