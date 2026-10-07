@@ -5,12 +5,15 @@ import java.util.Enumeration;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.URIUtil;
+import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.browser.ProgressAdapter;
 import org.eclipse.swt.browser.ProgressEvent;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.program.Program;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -46,6 +49,9 @@ public class MarkdownBrowser {
 	/** 로딩 완료 전에 요청된 이미지 기준 경로 */
 	private String _baseUri = "";
 
+	/** Eclipse 텍스트 글꼴이 바뀌면 미리보기 글꼴도 다시 적용하는 리스너 */
+	private final IPropertyChangeListener _fontListener = event -> onPropertyChange(event.getProperty());
+
 	/**
 	 * 브라우저를 만들고 뷰어 페이지 로딩을 시작한다.
 	 *
@@ -74,6 +80,8 @@ public class MarkdownBrowser {
 				// nothing to do
 			}
 		});
+		JFaceResources.getFontRegistry().addListener(_fontListener);
+		_browser.addDisposeListener(e -> JFaceResources.getFontRegistry().removeListener(_fontListener));
 		loadViewer();
 	}
 
@@ -130,10 +138,36 @@ public class MarkdownBrowser {
 		if (!_ready || _browser.isDisposed()) {
 			return;
 		}
-		String script = "renderMarkdown(" + JsUtils.toJsString(_markdown) + "," + JsUtils.toJsString(_baseUri) + ");";
+		String script = fontScript() + "renderMarkdown(" + JsUtils.toJsString(_markdown) + "," + JsUtils.toJsString(_baseUri) + ");";
 		if (!_browser.execute(script) && _log.isWarnEnabled()) {
 			_log.warn("Failed to execute renderMarkdown script");
 		}
+	}
+
+	/**
+	 * 글꼴 레지스트리 변경을 처리한다. 텍스트 글꼴이 바뀌면 UI 스레드에서 다시 적용한다.
+	 *
+	 * @param property 변경된 속성 이름
+	 */
+	private void onPropertyChange(String property) {
+		if (JFaceResources.TEXT_FONT.equals(property) && !_browser.isDisposed()) {
+			_browser.getDisplay().asyncExec(this::apply);
+		}
+	}
+
+	/**
+	 * Source 탭(Eclipse 텍스트 글꼴)과 같은 글꼴을 적용하는 JS 호출문을 만든다.
+	 *
+	 * @return applyFont(...) 호출문 (글꼴 정보가 없으면 빈 문자열)
+	 */
+	private String fontScript() {
+		FontData[] data = JFaceResources.getTextFont().getFontData();
+		if (data.length == 0) {
+			return "";
+		}
+		// SWT 글꼴 크기는 pt 이므로 화면 DPI 로 CSS px 로 환산한다 (macOS 72dpi 면 그대로).
+		double px = data[0].getHeight() * _browser.getDisplay().getDPI().y / 72.0;
+		return "applyFont(" + JsUtils.toJsString(data[0].getName()) + "," + px + ");";
 	}
 
 	/**

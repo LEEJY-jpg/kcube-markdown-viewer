@@ -60,6 +60,28 @@ md.renderer.rules.code_inline = function(tokens, idx) {
 };
 
 /**
+ * Eclipse 텍스트 에디터(Source 탭)와 동일한 글꼴을 본문 전체에 적용한다.
+ * @param {string} family 글꼴 이름
+ * @param {number} sizePx 글꼴 크기(px)
+ */
+function applyFont(family, sizePx) {
+	var style = document.getElementById('eclipse-font');
+	if (!style) {
+		style = document.createElement('style');
+		style.id = 'eclipse-font';
+		document.head.appendChild(style);
+	}
+	var face = '"' + family.replace(/["\\]/g, '') + '", monospace';
+	style.textContent = '.MarkDownViewer, .MarkDownViewer * { font-family: ' + face + ' !important; }'
+		+ '.MarkDownViewer { font-size: ' + sizePx + 'px !important; }'
+		+ '.MarkDownViewer pre, .MarkDownViewer code { font-size: 1em !important; }'
+		+ '.MarkDownViewer h1 { font-size: 1.6em !important; }'
+		+ '.MarkDownViewer h2 { font-size: 1.4em !important; }'
+		+ '.MarkDownViewer h3 { font-size: 1.25em !important; }'
+		+ '.MarkDownViewer h4 { font-size: 1.1em !important; }';
+}
+
+/**
  * Java(Eclipse)에서 호출하는 렌더링 진입점. 본문만 교체하므로 스크롤 위치가 유지된다.
  * @param {string} markdown 원본 Markdown 텍스트
  * @param {string} baseUri md 파일이 있는 폴더 URI (상대 경로 이미지 보정용, 없으면 빈 문자열)
