@@ -12,8 +12,8 @@ JDK 17 과 Maven 이 필요하다. 빌드 결과는 `dist/` 에 남는다 (`dist
 
 | 산출물 | 용도 |
 |---|---|
-| `dist/com.kcube.md_<버전>.jar` | dropins 설치용 플러그인 jar |
-| `dist/com.kcube.md.update-site-*.zip` | Eclipse 의 Install New Software 용 p2 업데이트 사이트 |
+| `dist/kcube-markdown-viewer-<버전>.jar` | dropins 설치용 플러그인 jar |
+| `dist/kcube-markdown-viewer-update-site-<버전>.zip` | Eclipse 의 Install New Software 용 p2 업데이트 사이트 |
 
 `JAVA_HOME` 을 지정하지 않으면 macOS 에서는 JDK 17 을 자동으로 찾는다. 기본 `mvn` 이 다른 JDK 를 쓰면 빌드가 실패할 수 있으므로 JDK 17 로 맞춘다.
 
@@ -25,17 +25,17 @@ JDK 17 과 Maven 이 필요하다. 빌드 결과는 `dist/` 에 남는다 (`dist
 ./build.sh --install
 ```
 
-빌드 후 `/Applications/Eclipse.app/Contents/Eclipse/dropins/` 의 기존 `com.kcube.md_*.jar` 를 지우고 새 jar 를 복사한다. 다른 경로의 Eclipse 는 `ECLIPSE_HOME` 으로 지정한다.
+빌드 후 `/Applications/Eclipse.app/Contents/Eclipse/dropins/` 의 기존 `com.kcube.md_*.jar`/`kcube-markdown-viewer-*.jar` 를 지우고 새 jar 를 복사한다. 다른 경로의 Eclipse 는 `ECLIPSE_HOME` 으로 지정한다.
 
 ```bash
 ECLIPSE_HOME=/path/to/Eclipse.app/Contents/Eclipse ./build.sh --install
 ```
 
-직접 설치하려면 `dist/com.kcube.md_*.jar` 를 `<Eclipse>/dropins/` 에 복사한다. 이때 옛 버전 jar 가 남아 있으면 Eclipse 가 그쪽을 로드하므로 반드시 지운다.
+직접 설치하려면 `dist/kcube-markdown-viewer-*.jar` 를 `<Eclipse>/dropins/` 에 복사한다. 이때 옛 버전 jar 가 남아 있으면 Eclipse 가 그쪽을 로드하므로 반드시 지운다.
 
 ### 방법 B. 업데이트 사이트
 
-1. Help > Install New Software… > Add… > Archive… 에서 `dist/com.kcube.md.update-site-*.zip` 을 선택한다.
+1. Help > Install New Software… > Add… > Archive… 에서 `dist/kcube-markdown-viewer-update-site-<버전>.zip` 을 선택한다.
 2. **KCube Tools** 카테고리의 KCube Markdown Viewer 를 선택하고 설치한다.
 
 ## 3. 재시작
