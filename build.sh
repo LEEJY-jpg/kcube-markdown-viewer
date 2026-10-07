@@ -24,15 +24,15 @@ mkdir -p "$ROOT/dist"
 JAR="$(ls "$ROOT"/com.kcube.md/target/com.kcube.md-*.jar | head -1)"
 # 파일명에는 qualifier(날짜)를 빼고 major.minor.micro 까지만 쓴다 (jar 안의 Bundle-Version 에는 qualifier 가 유지된다).
 VERSION="$(unzip -p "$JAR" META-INF/MANIFEST.MF | tr -d '\r' | sed -n 's/^Bundle-Version: *//p' | cut -d. -f1-3)"
-cp "$JAR" "$ROOT/dist/kcube-markdown-viewer-${VERSION}.jar"
+cp "$JAR" "$ROOT/dist/com.kcube.md.kcube-markdown-viewer-${VERSION}.jar"
 cp "$ROOT"/com.kcube.md.update-site/target/com.kcube.md.update-site-*.zip "$ROOT/dist/kcube-markdown-viewer-update-site-${VERSION}.zip"
-echo "built: dist/kcube-markdown-viewer-${VERSION}.jar"
+echo "built: dist/com.kcube.md.kcube-markdown-viewer-${VERSION}.jar"
 
 if [ "${1:-}" = "--install" ]; then
 	ECLIPSE_HOME="${ECLIPSE_HOME:-/Applications/Eclipse.app/Contents/Eclipse}"
 	[ -d "$ECLIPSE_HOME/dropins" ] || { echo "ECLIPSE_HOME 을 지정하세요 (…/Eclipse.app/Contents/Eclipse)"; exit 1; }
 	# 옛 버전이 남아 있으면 Eclipse 가 그쪽을 로드하므로 기존 설치본을 모두 치운다.
-	rm -rf "$ECLIPSE_HOME"/dropins/com.kcube.md_*.jar "$ECLIPSE_HOME"/dropins/kcube-markdown-viewer-*.jar
-	cp "$ROOT/dist/kcube-markdown-viewer-${VERSION}.jar" "$ECLIPSE_HOME/dropins/"
+	rm -rf "$ECLIPSE_HOME"/dropins/com.kcube.md_*.jar "$ECLIPSE_HOME"/dropins/com.kcube.md.kcube-markdown-viewer-*.jar
+	cp "$ROOT/dist/com.kcube.md.kcube-markdown-viewer-${VERSION}.jar" "$ECLIPSE_HOME/dropins/"
 	echo "installed to $ECLIPSE_HOME/dropins — Eclipse 를 -clean 으로 재시작하세요"
 fi
