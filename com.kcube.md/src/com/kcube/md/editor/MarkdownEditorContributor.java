@@ -12,7 +12,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
  */
 public class MarkdownEditorContributor extends MultiPageEditorActionBarContributor {
 
-	/** Edit 탭의 텍스트 에디터로 위임할 전역 액션 ID 목록 */
+	/** Source 탭의 텍스트 에디터로 위임할 전역 액션 ID 목록 */
 	private static final String[] GLOBAL_ACTIONS = {
 			ActionFactory.UNDO.getId(),
 			ActionFactory.REDO.getId(),

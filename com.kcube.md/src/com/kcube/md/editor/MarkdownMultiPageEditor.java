@@ -25,19 +25,19 @@ import com.kcube.md.preview.MarkdownBrowser;
 import com.kcube.md.util.EditorInputs;
 
 /**
- * Edit / Preview 두 탭으로 구성된 Markdown 에디터.
+ * Source / Preview 두 탭으로 구성된 Markdown 에디터.
  * <p>
- * Edit 탭은 이클립스 기본 {@link TextEditor}, Preview 탭은 JS 뷰어를 로드한 브라우저다.
+ * Source 탭은 이클립스 기본 {@link TextEditor}, Preview 탭은 JS 뷰어를 로드한 브라우저다.
  */
 public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 
 	/** 로거 */
 	private static final Logger _log = LoggerFactory.getLogger(MarkdownMultiPageEditor.class);
 
-	/** Edit 탭 페이지 인덱스 */
-	private static final int PAGE_EDIT = 0;
+	/** Source 탭 페이지 인덱스 */
+	private static final int PAGE_SOURCE = 0;
 
-	/** Edit 탭에 내장된 텍스트 에디터 */
+	/** Source 탭에 내장된 텍스트 에디터 */
 	private TextEditor _textEditor;
 
 	/** Preview 탭의 브라우저 (브라우저 생성 실패 시 null) */
@@ -63,7 +63,7 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 	}
 
 	/**
-	 * Edit / Preview 페이지를 만든다.
+	 * Source / Preview 페이지를 만든다.
 	 */
 	@Override
 	protected void createPages() {
@@ -73,13 +73,13 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 	}
 
 	/**
-	 * Edit 탭(텍스트 에디터)을 만든다.
+	 * Source 탭(텍스트 에디터)을 만든다.
 	 */
 	private void createEditPage() {
 		try {
 			_textEditor = new TextEditor();
 			int index = addPage(_textEditor, getEditorInput());
-			setPageText(index, "Edit");
+			setPageText(index, "Source");
 		} catch (PartInitException e) {
 			if (_log.isErrorEnabled()) {
 				_log.error("Failed to create text editor page", e);
@@ -144,7 +144,7 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 	}
 
 	/**
-	 * Edit 탭의 내용을 저장한다.
+	 * Source 탭의 내용을 저장한다.
 	 *
 	 * @param monitor 진행 모니터
 	 */
