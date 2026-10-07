@@ -1,6 +1,7 @@
 package com.kcube.md.preview;
 
 import java.net.URL;
+import java.util.Enumeration;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.URIUtil;
@@ -55,8 +56,11 @@ public class MarkdownBrowser {
 		_browser.addProgressListener(new ProgressAdapter() {
 			@Override
 			public void completed(ProgressEvent event) {
-				_ready = true;
-				apply();
+				String url = _browser.getUrl();
+				if (url != null && url.contains("viewer.html")) {
+					_ready = true;
+					apply();
+				}
 			}
 		});
 		_browser.addLocationListener(new LocationListener() {
@@ -120,13 +124,22 @@ public class MarkdownBrowser {
 	}
 
 	/**
-	 * 번들의 viewer.html 을 로컬 파일 URL 로 풀어 브라우저에 로드한다.
+	 * 번들의 web/ 리소스를 모두 로컬로 풀고 viewer.html 을 브라우저에 로드한다.
+	 * <p>
+	 * jar 로 설치된 번들은 {@link FileLocator#toFileURL(URL)} 이 요청한 파일 하나만 풀기 때문에,
+	 * css/js 등 하위 리소스도 각각 풀어 두어야 한다.
 	 */
 	private void loadViewer() {
 		try {
 			Bundle bundle = FrameworkUtil.getBundle(MarkdownBrowser.class);
-			URL entry = bundle.getEntry(VIEWER_PATH);
-			URL fileUrl = FileLocator.toFileURL(entry);
+			Enumeration<URL> entries = bundle.findEntries("web", "*", true);
+			while (entries != null && entries.hasMoreElements()) {
+				URL entry = entries.nextElement();
+				if (!entry.getPath().endsWith("/")) {
+					FileLocator.toFileURL(entry);
+				}
+			}
+			URL fileUrl = FileLocator.toFileURL(bundle.getEntry(VIEWER_PATH));
 			_browser.setUrl(URIUtil.toURI(fileUrl).toString());
 		} catch (Exception e) {
 			if (_log.isErrorEnabled()) {

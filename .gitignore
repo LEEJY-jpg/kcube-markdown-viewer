@@ -4,6 +4,7 @@ bin/
 bin-test/
 /out/
 target/
+dist/
 
 # OS
 .DS_Store
