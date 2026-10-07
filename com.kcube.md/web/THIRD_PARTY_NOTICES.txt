@@ -1,0 +1,5 @@
+Third-party components bundled in this directory:
+
+- markdown-it 13.0.1  (MIT License)           https://github.com/markdown-it/markdown-it
+- highlight.js 11.8.0 (BSD-3-Clause License)  https://highlightjs.org/
+- Bootstrap CSS       (MIT License)           https://getbootstrap.com/

@@ -1,0 +1,18 @@
+/* Eclipse 임베디드 뷰어용 보정 스타일 */
+body {
+	margin: 0;
+	background: #fff;
+}
+.MarkDownViewer img {
+	max-width: 100%;
+}
+.MarkDownViewer .code-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.MarkDownViewer .code-language-label,
+.MarkDownViewer .copy-btn {
+	cursor: pointer;
+	font-size: 12px;
+}

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension point="org.eclipse.ui.editors">
+      <editor
+         class="com.kcube.md.editor.MarkdownMultiPageEditor"
+         contributorClass="com.kcube.md.editor.MarkdownEditorContributor"
+         default="true"
+         extensions="md,markdown"
+         icon="icons/md.png"
+         id="com.kcube.md.editor"
+         name="KCube Markdown Viewer"/>
+   </extension>
+
+   <extension point="org.eclipse.ui.views">
+      <category
+         id="com.kcube.md.category"
+         name="Markdown"/>
+      <view
+         allowMultiple="false"
+         category="com.kcube.md.category"
+         class="com.kcube.md.views.MarkdownPreviewView"
+         icon="icons/md.png"
+         id="com.kcube.md.preview"
+         name="Markdown Preview"
+         restorable="true"/>
+   </extension>
+
+</plugin>

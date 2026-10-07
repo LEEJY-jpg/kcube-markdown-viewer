@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.kcube.md.feature"
+      label="KCube Markdown Viewer"
+      version="1.0.0.qualifier"
+      provider-name="KCube">
+
+   <description>
+      Markdown editor and preview for Eclipse.
+   </description>
+
+   <copyright>
+      Copyright (c) KCube.
+   </copyright>
+
+   <license url="">
+      Bundled third-party components: markdown-it (MIT), highlight.js (BSD-3-Clause), Bootstrap (MIT).
+   </license>
+
+   <plugin
+         id="com.kcube.md"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>
