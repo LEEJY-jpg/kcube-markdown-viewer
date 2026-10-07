@@ -22,7 +22,8 @@ mvn -q -B clean verify
 rm -rf "$ROOT/dist"
 mkdir -p "$ROOT/dist"
 JAR="$(ls "$ROOT"/com.kcube.md/target/com.kcube.md-*.jar | head -1)"
-VERSION="$(unzip -p "$JAR" META-INF/MANIFEST.MF | tr -d '\r' | sed -n 's/^Bundle-Version: *//p')"
+# 파일명에는 qualifier(날짜)를 빼고 major.minor.micro 까지만 쓴다 (jar 안의 Bundle-Version 에는 qualifier 가 유지된다).
+VERSION="$(unzip -p "$JAR" META-INF/MANIFEST.MF | tr -d '\r' | sed -n 's/^Bundle-Version: *//p' | cut -d. -f1-3)"
 cp "$JAR" "$ROOT/dist/com.kcube.md_${VERSION}.jar"
 cp "$ROOT"/com.kcube.md.update-site/target/com.kcube.md.update-site-*.zip "$ROOT/dist/"
 echo "built: dist/com.kcube.md_${VERSION}.jar"
