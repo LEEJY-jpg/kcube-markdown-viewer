@@ -70,6 +70,10 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 		createEditPage();
 		createPreviewPage();
 		setPartName(getEditorInput().getName());
+		// 파일을 처음 열면 Preview 탭을 먼저 보여 준다.
+		if (_preview != null) {
+			setActivePage(_previewIndex);
+		}
 	}
 
 	/**
