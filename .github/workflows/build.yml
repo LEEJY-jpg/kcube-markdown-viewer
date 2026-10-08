@@ -1,0 +1,41 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build (Tycho)
+        run: mvn -B clean verify
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p dist
+          VERSION="$(unzip -p com.kcube.md/target/com.kcube.md-*.jar META-INF/MANIFEST.MF | tr -d '\r' | sed -n 's/^Bundle-Version: *//p' | cut -d. -f1-3)"
+          cp com.kcube.md/target/com.kcube.md-*.jar "dist/com.kcube.md.kcube-markdown-viewer-${VERSION}.jar"
+          cp com.kcube.md.update-site/target/com.kcube.md.update-site-*.zip "dist/kcube-markdown-viewer-update-site-${VERSION}.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kcube-markdown-viewer
+          path: dist/*
+
+      - name: Publish GitHub release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
