@@ -41,6 +41,7 @@
   - Supports save, save as, undo/redo, find, and the dirty (*) indicator.
 - **Preview tab**: loads the JS viewer into an SWT `Browser`.
   - Renders the latest content when switching to the Preview tab.
+  - When a file is opened for the first time, the Preview tab is shown first (the tab order stays Source, Preview).
 - When switching tabs, global actions such as Undo/Copy/Find are connected to / disconnected from the active tab.
 
 ### 3.2 Markdown Preview view (supplementary feature)
@@ -54,11 +55,27 @@
 - Does not call it before the page has finished loading (`ProgressListener.completed`).
 - The JS side replaces only the body and **keeps the scroll position**.
 
-### 3.4 Items to consider later
+### 3.4 Preview search
+- Ctrl/Cmd+F opens a search bar at the top right of the Preview (**case-insensitive**, Korean supported).
+- Enter / F3 moves to the next match, Shift+Enter to the previous one (wraps around); Esc or the ✕ button closes the bar and removes the highlights. A `n/m` counter is displayed.
+- Implemented in JS (`web/js/search.js`): matches in text nodes are wrapped in `<mark class="kc-hit">`, and the current match gets `kc-hit-active`.
+- Not searched: the code block header (language label, copy button) and collapsed (hidden) code.
+- While Hangul/IME composition is in progress the search is not run; it runs when composition ends.
+- If the preview is re-rendered while the search bar is open (the user edits the source), the search is re-applied and the current position is kept (`reapplySearch()`).
+- When the Preview tab is active, the Eclipse **Find** global action is connected to opening this search bar (`MarkdownEditorContributor`, `MarkdownMultiPageEditor.openPreviewSearch()`). Special regular-expression characters in the query are treated as plain text.
+
+### 3.5 Preview font
+- The Preview uses the same font as the Source tab, i.e. the Eclipse text font (`JFaceResources.TEXT_FONT`).
+- Java passes the font name and size (converted from pt to CSS px using the display DPI) with `applyFont(family, sizePx)` before each rendering.
+- Headings are sized relative to the body (h1 1.6em, h2 1.4em, h3 1.25em, h4 1.1em); code blocks and inline code use the body size.
+- When the text font is changed in Preferences, the Preview is updated immediately.
+
+### 3.6 Items to consider later
 - [ ] Markdown syntax highlighting in the Source tab (headings, bold, code blocks, etc.)
 - [ ] Side-by-side Source | Preview tab
 - [ ] Scroll synchronization between editor and preview
-- [ ] Code highlighting (highlight.js, etc.)
+- [x] Code highlighting (highlight.js) — done
+- [x] Search in the Preview — done (3.4)
 - [ ] Dark theme (`prefers-color-scheme`)
 - [ ] Open files in Eclipse when a preview link is clicked (`BrowserFunction`, JS → Java)
 
@@ -81,7 +98,7 @@ kcube-markdown-viewer/
 │   ├── web/                                # existing JS viewer (works offline)
 │   │   ├── viewer.html
 │   │   ├── css/                            # bootstrap, highlight theme, MarkDownViewer.css, viewer.css
-│   │   └── js/                             # markdown-it, highlight.js, viewer.js
+│   │   └── js/                             # markdown-it, highlight.js, viewer.js, search.js
 │   └── src/com/kcube/md/
 │       ├── editor/
 │       │   ├── MarkdownMultiPageEditor.java    # Source/Preview tab editor
@@ -114,7 +131,7 @@ kcube-markdown-viewer/
 - `org.eclipse.ui.views` — registers the Markdown category and the Preview view
 
 ### 4.4 Java ↔ JS integration rules
-- JS entry point: the `renderMarkdown(markdown)` function (added to the existing viewer)
+- JS entry points (called from Java with `browser.execute`): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `openSearch()`
 - Loading the viewer page: `FrameworkUtil.getBundle(...).getEntry("web/viewer.html")` → `FileLocator.toFileURL()` → `browser.setUrl()`
 - Always use `JsUtils.toJsString()` to pass strings
   - Escape `"`, `\`, `\n`, `\r`, ` `, ` `

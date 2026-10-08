@@ -41,6 +41,7 @@
   - 저장, 다른 이름으로 저장, Undo/Redo, 찾기, dirty(*) 표시 지원
 - **Preview 탭**: SWT `Browser`에 JS 뷰어 로드
   - Preview 탭으로 전환될 때 최신 내용으로 렌더링
+  - 파일을 처음 열면 Preview 탭을 먼저 표시 (탭 순서는 Source, Preview 로 유지)
 - 탭 전환 시 Undo/Copy/Find 등 전역 액션이 활성 탭에 맞게 연결/해제될 것
 
 ### 3.2 Markdown Preview 뷰 (보조 기능)
@@ -54,11 +55,27 @@
 - 페이지 로딩 완료(`ProgressListener.completed`) 전에는 호출하지 않음
 - JS 쪽은 본문만 교체하고 **스크롤 위치 유지**
 
-### 3.4 향후 검토 항목
+### 3.4 Preview 검색
+- Ctrl/Cmd+F 로 Preview 우측 상단에 검색바를 연다 (**대소문자 구분 없음**, 한글 지원).
+- Enter / F3 은 다음, Shift+Enter 는 이전 일치로 이동(끝에서 순환), Esc 또는 ✕ 버튼은 검색바를 닫고 강조를 제거한다. `n/m` 카운터를 표시한다.
+- JS(`web/js/search.js`)로 구현: 텍스트 노드의 일치 부분을 `<mark class="kc-hit">`로 감싸고, 현재 항목은 `kc-hit-active` 로 구분한다.
+- 검색 제외: 코드 블록 헤더(언어 라벨, 복사 버튼), 접힌(숨겨진) 코드
+- 한글(IME) 조합 중에는 검색하지 않고, 조합이 끝나면 검색한다.
+- 검색바가 열린 상태에서 재렌더링되면(소스 편집 시) 검색을 다시 적용하고 현재 위치를 유지한다 (`reapplySearch()`).
+- Preview 탭이 활성일 때 Eclipse **Find** 전역 액션이 이 검색바 열기로 연결된다 (`MarkdownEditorContributor`, `MarkdownMultiPageEditor.openPreviewSearch()`). 검색어의 정규식 특수문자는 일반 문자로 처리한다.
+
+### 3.5 Preview 글꼴
+- Preview 는 Source 탭과 같은 글꼴, 즉 Eclipse 텍스트 글꼴(`JFaceResources.TEXT_FONT`)을 사용한다.
+- Java 가 렌더링 전마다 `applyFont(family, sizePx)` 로 글꼴 이름과 크기(화면 DPI 로 pt → CSS px 환산)를 전달한다.
+- 제목은 본문 기준 상대 크기(h1 1.6em, h2 1.4em, h3 1.25em, h4 1.1em), 코드 블록·인라인 코드는 본문과 같은 크기를 쓴다.
+- Preferences 에서 텍스트 글꼴을 바꾸면 Preview 에도 즉시 반영된다.
+
+### 3.6 향후 검토 항목
 - [ ] Source 탭 Markdown 문법 하이라이팅 (제목, 굵게, 코드블록 등)
 - [ ] Source | Preview 좌우 분할 탭
 - [ ] 에디터 ↔ 미리보기 스크롤 동기화
-- [ ] 코드 하이라이팅 (highlight.js 등)
+- [x] 코드 하이라이팅 (highlight.js) — 완료
+- [x] Preview 검색 — 완료 (3.4)
 - [ ] 다크 테마 (`prefers-color-scheme`)
 - [ ] 미리보기 링크 클릭 시 이클립스에서 파일 열기 (`BrowserFunction`, JS → Java)
 
@@ -81,7 +98,7 @@ kcube-markdown-viewer/
 │   ├── web/                                # 기존 JS 뷰어 (오프라인 동작)
 │   │   ├── viewer.html
 │   │   ├── css/                            # bootstrap, highlight 테마, MarkDownViewer.css, viewer.css
-│   │   └── js/                             # markdown-it, highlight.js, viewer.js
+│   │   └── js/                             # markdown-it, highlight.js, viewer.js, search.js
 │   └── src/com/kcube/md/
 │       ├── editor/
 │       │   ├── MarkdownMultiPageEditor.java    # Source/Preview 탭 에디터
@@ -114,7 +131,7 @@ kcube-markdown-viewer/
 - `org.eclipse.ui.views` — Markdown 카테고리 및 Preview 뷰 등록
 
 ### 4.4 Java ↔ JS 연동 규칙
-- JS 진입점: `renderMarkdown(markdown)` 함수 (기존 뷰어에 추가)
+- JS 진입점 (Java 에서 `browser.execute` 로 호출): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `openSearch()`
 - 뷰어 페이지 로드: `FrameworkUtil.getBundle(...).getEntry("web/viewer.html")` → `FileLocator.toFileURL()` → `browser.setUrl()`
 - 문자열 전달은 반드시 `JsUtils.toJsString()` 사용
   - `"`, `\`, `\n`, `\r`, `\u2028`, `\u2029` 이스케이프
