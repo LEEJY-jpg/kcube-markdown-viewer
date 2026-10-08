@@ -24,9 +24,8 @@ jobs:
       - name: Build (Tycho)
         run: |
           set -o pipefail
-          mvn -v
-          mvn -B -e clean verify 2>&1 | tee build.log || {
-            echo "::error title=Maven build failed::$(grep -E 'ERROR|Caused by|BUILD' build.log | head -25 | sed ':a;N;$!ba;s/\n/%0A/g')"
+          { mvn -v; mvn -B -e clean verify; } 2>&1 | tee build.log || {
+            echo "::error title=Maven build failed::$(head -6 build.log | tr '\n' '|') ## $(grep -E 'ERROR|Caused by' build.log | grep -v '^\[ERROR\] *$' | sed -n '1,3p;/Caused by/p' | head -12 | tr '\n' '|' | cut -c1-1500)"
             exit 1
           }
 
