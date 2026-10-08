@@ -32,3 +32,7 @@ RemoteSystemsTempFiles/
 *.log
 *.bak
 *.tmp
+
+
+AGENT.md
+/CLAUDE.md
