@@ -32,8 +32,8 @@ jobs:
 
       - name: Collect artifacts
         run: |
+          echo "::notice title=target listing::$(find . -path '*/target/*' \( -name '*.jar' -o -name '*.zip' \) | head -20 | tr '\n' ' ')"
           set -e
-          ls -l com.kcube.md/target/*.jar com.kcube.md.update-site/target/*.zip
           mkdir -p dist
           JAR="$(ls com.kcube.md/target/com.kcube.md-*.jar | grep -v -e sources -e javadoc | head -1)"
           ZIP="$(ls com.kcube.md.update-site/target/com.kcube.md.update-site-*.zip | head -1)"
