@@ -106,7 +106,25 @@ All you need is a single jar file from the developer. No source code, Maven, or 
 
 > On macOS, if the downloaded jar carries the "downloaded file" quarantine attribute and causes problems, run `xattr -d com.apple.quarantine <path to jar>` before copying it.
 
-## Installation (Install New Software, by URL)
+## Installation (Install New Software, update site URL)
+
+The simplest way, and the only one that supports **Help > Check for Updates**. Eclipse downloads the plug-in from the project's update site (internet access to leejy-jpg.github.io is required).
+
+1. In Eclipse, choose **Help > Install New Software…** and click **Add…**.
+2. Enter the following and click **Add**.
+
+   | Field | Value |
+   |---|---|
+   | Name | `KCube Markdown Viewer` |
+   | Location | `https://leejy-jpg.github.io/kcube-markdown-viewer/` |
+
+3. Select **KCube Markdown Viewer** under the **KCube Tools** category and click **Next**.
+4. Accept the license and click **Finish**. If a security warning about unsigned content appears, choose **Install anyway**.
+5. Restart Eclipse when prompted.
+
+To update, use **Help > Check for Updates**. To uninstall, use **Help > About Eclipse IDE > Installation Details**, select KCube Markdown Viewer, and click **Uninstall…**.
+
+## Installation (Install New Software, release zip URL)
 
 Use this if you prefer not to touch the `dropins` folder. Eclipse downloads the plug-in directly from the GitHub Release (internet access to github.com is required).
 

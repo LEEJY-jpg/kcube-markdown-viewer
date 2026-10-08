@@ -106,7 +106,25 @@ open -a Eclipse --args -clean
 
 > macOS 에서 내려받은 jar 에 "다운로드한 파일" 격리 속성이 붙어 문제가 되면 `xattr -d com.apple.quarantine <jar 경로>` 를 실행한 뒤 복사한다.
 
-## 설치 (Install New Software, URL 방식)
+## 설치 (Install New Software, 업데이트 사이트 URL)
+
+가장 간단하며 **Help > Check for Updates** 로 업데이트할 수 있는 유일한 방식입니다. Eclipse 가 프로젝트의 업데이트 사이트에서 플러그인을 내려받습니다. (leejy-jpg.github.io 인터넷 접속 필요)
+
+1. Eclipse 에서 **Help > Install New Software…** 를 선택하고 **Add…** 를 누릅니다.
+2. 아래처럼 입력하고 **Add** 를 누릅니다.
+
+   | 항목 | 값 |
+   |---|---|
+   | Name | `KCube Markdown Viewer` |
+   | Location | `https://leejy-jpg.github.io/kcube-markdown-viewer/` |
+
+3. **KCube Tools** 카테고리의 **KCube Markdown Viewer** 를 선택하고 **Next** 를 누릅니다.
+4. 라이선스에 동의하고 **Finish** 를 누릅니다. 서명되지 않은 콘텐츠 경고가 나오면 **Install anyway** 를 선택합니다.
+5. 안내에 따라 Eclipse 를 재시작합니다.
+
+업데이트는 **Help > Check for Updates**, 삭제는 **Help > About Eclipse IDE > Installation Details** 에서 KCube Markdown Viewer 를 선택하고 **Uninstall…** 로 합니다.
+
+## 설치 (Install New Software, 릴리스 zip URL 방식)
 
 `dropins` 폴더를 직접 다루지 않고 설치하려는 경우에 사용합니다. Eclipse 가 GitHub Release 에서 플러그인을 바로 내려받습니다. (github.com 인터넷 접속 필요)
 
