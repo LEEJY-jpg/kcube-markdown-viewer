@@ -1,133 +1,135 @@
-# 설치 방법
+# Installation
 
-- 플러그인을 **받아서 쓰기만** 하는 사용자는 [일반 사용자 설치 가이드](#일반-사용자-설치-가이드)를 본다.
-- 소스에서 직접 빌드하는 **개발자**는 아래 1~4 절을 따른다.
+[English](INSTALL.md) | [한국어](INSTALL_ko.md)
 
-KCube Markdown Viewer 는 Eclipse 4.33(2024-09) 이상, JDK 17 환경을 기준으로 한다.
+- Users who just **install and use** the plug-in: see the [End-user installation guide](#end-user-installation-guide).
+- **Developers** who build from source: follow sections 1 to 4 below.
 
-## 1. 빌드
+KCube Markdown Viewer targets Eclipse 4.33 (2024-09) or later and JDK 17.
 
-JDK 17 과 Maven 이 필요하다. 빌드 결과는 `dist/` 에 남는다 (`dist/` 는 git 추적 대상이 아니다).
+## 1. Build
+
+JDK 17 and Maven are required. The build output is placed in `dist/` (not tracked by git).
 
 ```bash
 ./build.sh
 ```
 
-| 산출물 | 용도 |
+| Artifact | Purpose |
 |---|---|
-| `dist/com.kcube.md.kcube-markdown-viewer-<버전>.jar` | dropins 설치용 플러그인 jar |
-| `dist/kcube-markdown-viewer-update-site-<버전>.zip` | Eclipse 의 Install New Software 용 p2 업데이트 사이트 |
+| `dist/com.kcube.md.kcube-markdown-viewer-<version>.jar` | Plug-in jar for dropins installation |
+| `dist/kcube-markdown-viewer-update-site-<version>.zip` | p2 update site for Eclipse's Install New Software |
 
-`JAVA_HOME` 을 지정하지 않으면 macOS 에서는 JDK 17 을 자동으로 찾는다. 기본 `mvn` 이 다른 JDK 를 쓰면 빌드가 실패할 수 있으므로 JDK 17 로 맞춘다.
+If `JAVA_HOME` is not set, JDK 17 is detected automatically on macOS. The build may fail if the default `mvn` uses another JDK, so make sure JDK 17 is used.
 
-## 2. 설치
+## 2. Install
 
-### 방법 A. dropins (권장)
+### Option A. dropins (recommended)
 
 ```bash
 ./build.sh --install
 ```
 
-빌드 후 `/Applications/Eclipse.app/Contents/Eclipse/dropins/` 의 기존 `com.kcube.md_*.jar`/`com.kcube.md.kcube-markdown-viewer-*.jar` 를 지우고 새 jar 를 복사한다. 다른 경로의 Eclipse 는 `ECLIPSE_HOME` 으로 지정한다.
+After building, this removes the existing `com.kcube.md_*.jar` / `com.kcube.md.kcube-markdown-viewer-*.jar` from `/Applications/Eclipse.app/Contents/Eclipse/dropins/` and copies the new jar. For an Eclipse in another location, set `ECLIPSE_HOME`.
 
 ```bash
 ECLIPSE_HOME=/path/to/Eclipse.app/Contents/Eclipse ./build.sh --install
 ```
 
-직접 설치하려면 `dist/com.kcube.md.kcube-markdown-viewer-*.jar` 를 `<Eclipse>/dropins/` 에 복사한다. 이때 옛 버전 jar 가 남아 있으면 Eclipse 가 그쪽을 로드하므로 반드시 지운다.
+To install manually, copy `dist/com.kcube.md.kcube-markdown-viewer-*.jar` into `<Eclipse>/dropins/`. Always delete older jars first: if an old jar remains, Eclipse may load that one instead.
 
-### 방법 B. 업데이트 사이트
+### Option B. Update site
 
-1. Help > Install New Software… > Add… > Archive… 에서 `dist/kcube-markdown-viewer-update-site-<버전>.zip` 을 선택한다.
-2. **KCube Tools** 카테고리의 KCube Markdown Viewer 를 선택하고 설치한다.
+1. Help > Install New Software… > Add… > Archive… and select `dist/kcube-markdown-viewer-update-site-<version>.zip`.
+2. Select KCube Markdown Viewer under the **KCube Tools** category and install it.
 
-## 3. 재시작
+## 3. Restart
 
-Eclipse 를 `-clean` 옵션으로 재시작한다. 플러그인 구조나 리소스가 바뀐 뒤에는 필수다.
+Restart Eclipse with the `-clean` option. This is required after the plug-in structure or resources have changed.
 
 ```bash
 open -a Eclipse --args -clean
 ```
 
-## 4. 확인
+## 4. Verify
 
-- `.md` / `.markdown` 파일을 열면 **Source** / **Preview** 탭이 보인다.
-- Window > Show View > Other… > **Markdown** > Markdown Preview 로 실시간 미리보기 뷰를 연다.
-- Preview 에서 Ctrl/Cmd+F 로 검색바를 연다 (대소문자 구분 없음, Enter/Shift+Enter 로 이동, Esc 로 닫기).
+- Opening a `.md` / `.markdown` file shows **Source** / **Preview** tabs.
+- Open the live preview view via Window > Show View > Other… > **Markdown** > Markdown Preview.
+- In Preview, press Ctrl/Cmd+F to open the search bar (case-insensitive; Enter / Shift+Enter to move, Esc to close).
 
-## 문제 해결
+## Troubleshooting
 
-- 에디터가 열리지 않으면 `<workspace>/.metadata/.log` 에서 `com.kcube.md` 관련 오류를 확인한다.
-- 이전 버전이 계속 동작하면 `dropins/` 에 옛 jar 가 남아 있는지 확인하고 `-clean` 으로 재시작한다.
+- If the editor does not open, check `<workspace>/.metadata/.log` for errors related to `com.kcube.md`.
+- If an older version keeps running, check whether an old jar remains in `dropins/` and restart with `-clean`.
 
 ---
 
-# 일반 사용자 설치 가이드
+# End-user installation guide
 
-개발자에게 받은 jar 파일 하나만 있으면 된다. 소스, Maven, JDK 빌드 환경은 필요 없다.
+All you need is a single jar file from the developer. No source code, Maven, or JDK build environment is required.
 
-## 준비물
+## Prerequisites
 
-- Eclipse 4.33(2024-09) 이상 (Eclipse IDE for Java Developers 등 일반 배포판)
-- Eclipse 를 실행할 JRE/JDK 17 이상 (Eclipse 4.33 자체 요구사항)
-- 배포받은 `com.kcube.md.kcube-markdown-viewer-<버전>.jar`
+- Eclipse 4.33 (2024-09) or later (any standard distribution, such as Eclipse IDE for Java Developers)
+- A JRE/JDK 17 or later to run Eclipse (a requirement of Eclipse 4.33 itself)
+- The distributed `com.kcube.md.kcube-markdown-viewer-<version>.jar`
 
-## 설치 (dropins 방식)
+## Installation (dropins)
 
-1. **Eclipse 를 종료**한다.
-2. jar 파일을 Eclipse 설치 폴더의 `dropins` 폴더에 복사한다.
+1. **Quit Eclipse.**
+2. Copy the jar file into the `dropins` folder of your Eclipse installation.
 
-   | OS | dropins 위치 (기본 설치 기준) |
+   | OS | dropins location (default install) |
    |---|---|
    | macOS | `/Applications/Eclipse.app/Contents/Eclipse/dropins/` |
-   | Windows | `C:\eclipse\dropins\` (Eclipse 를 푼 폴더 아래) |
-   | Linux | `~/eclipse/dropins/` (Eclipse 를 푼 폴더 아래) |
+   | Windows | `C:\eclipse\dropins\` (under the folder where Eclipse was extracted) |
+   | Linux | `~/eclipse/dropins/` (under the folder where Eclipse was extracted) |
 
-   macOS 에서는 Finder 에서 Eclipse.app 우클릭 > 패키지 내용 보기 > Contents > Eclipse > dropins 로 이동하거나, 터미널에서 다음을 실행한다.
+   On macOS, either go to Eclipse.app > Show Package Contents > Contents > Eclipse > dropins in Finder, or run the following in a terminal.
 
    ```bash
    cp ~/Downloads/com.kcube.md.kcube-markdown-viewer-*.jar /Applications/Eclipse.app/Contents/Eclipse/dropins/
    ```
 
-3. Eclipse 를 **`-clean` 옵션으로 한 번 실행**한다. (최초 설치 시 필수)
+3. **Start Eclipse once with the `-clean` option.** (Required for the first installation.)
 
    ```bash
    # macOS
    open -a Eclipse --args -clean
-   # Windows (명령 프롬프트)
+   # Windows (Command Prompt)
    C:\eclipse\eclipse.exe -clean
    # Linux
    ~/eclipse/eclipse -clean
    ```
 
-   이후에는 평소처럼 실행하면 된다.
+   After that, start Eclipse as usual.
 
-> macOS 에서 내려받은 jar 에 "다운로드한 파일" 격리 속성이 붙어 문제가 되면 `xattr -d com.apple.quarantine <jar 경로>` 를 실행한 뒤 복사한다.
+> On macOS, if the downloaded jar carries the "downloaded file" quarantine attribute and causes problems, run `xattr -d com.apple.quarantine <path to jar>` before copying it.
 
-## 설치 확인
+## Verifying the installation
 
-1. 아무 `.md` 파일을 연다 (Package Explorer 에서 더블클릭).
-2. 에디터 하단에 **Source** / **Preview** 탭이 보이면 설치된 것이다.
-3. Preview 탭에서 렌더링된 화면이 보이고, Ctrl/Cmd+F 로 검색바가 열리는지 확인한다.
-4. (선택) Window > Show View > Other… > **Markdown** > Markdown Preview 로 실시간 미리보기 뷰를 연다.
+1. Open any `.md` file (double-click it in Package Explorer).
+2. If you see **Source** / **Preview** tabs at the bottom of the editor, the plug-in is installed.
+3. Check that the Preview tab shows the rendered page and that Ctrl/Cmd+F opens the search bar.
+4. (Optional) Open the live preview view via Window > Show View > Other… > **Markdown** > Markdown Preview.
 
-`.md` 파일이 다른 에디터로 열리면 파일 우클릭 > Open With > **KCube Markdown Viewer** 를 선택하거나, Preferences > General > Editors > File Associations 에서 `*.md` 의 기본 에디터를 KCube Markdown Viewer 로 지정한다.
+If `.md` files open in another editor, right-click the file > Open With > **KCube Markdown Viewer**, or set KCube Markdown Viewer as the default editor for `*.md` in Preferences > General > Editors > File Associations.
 
-## 업데이트
+## Updating
 
-1. Eclipse 를 종료한다.
-2. `dropins` 폴더의 기존 `com.kcube.md.kcube-markdown-viewer-*.jar`(또는 옛 이름의 `com.kcube.md_*.jar`)를 **삭제**하고 새 jar 를 복사한다. 옛 jar 가 남아 있으면 옛 버전이 로드될 수 있다.
-3. `-clean` 옵션으로 Eclipse 를 실행한다.
+1. Quit Eclipse.
+2. **Delete** the existing `com.kcube.md.kcube-markdown-viewer-*.jar` (or the old-named `com.kcube.md_*.jar`) in the `dropins` folder and copy the new jar. If an old jar remains, the old version may be loaded.
+3. Start Eclipse with the `-clean` option.
 
-## 삭제
+## Uninstalling
 
-Eclipse 를 종료하고 `dropins` 폴더에서 jar 를 삭제한 뒤 `-clean` 으로 실행한다.
+Quit Eclipse, delete the jar from the `dropins` folder, and start Eclipse with `-clean`.
 
-## 문제 해결
+## Troubleshooting
 
-| 증상 | 확인 |
+| Symptom | What to check |
 |---|---|
-| Source/Preview 탭이 보이지 않는다 | `-clean` 으로 재시작했는지, jar 가 `dropins` 에 있는지 확인한다. |
-| Preview 가 비어 있다 | Window > Preferences > General > Web Browser 설정과 무관하다. 에디터를 닫고 다시 열어 보고, 계속되면 `<workspace>/.metadata/.log` 를 개발자에게 전달한다. |
-| Eclipse 버전이 낮다는 오류 | Eclipse 4.33(2024-09) 이상으로 업그레이드한다. |
-| 로그 위치 | `<workspace>/.metadata/.log` (Window > Show View > Error Log 에서도 확인 가능) |
+| The Source/Preview tabs do not appear | Make sure you restarted with `-clean` and that the jar is in `dropins`. |
+| The Preview is blank | This is unrelated to Window > Preferences > General > Web Browser. Close and reopen the editor; if it persists, send `<workspace>/.metadata/.log` to the developer. |
+| An error says the Eclipse version is too old | Upgrade to Eclipse 4.33 (2024-09) or later. |
+| Log location | `<workspace>/.metadata/.log` (also available via Window > Show View > Error Log) |

@@ -1,168 +1,170 @@
-# KCube Markdown Viewer — 요건 및 개발 규칙
+# KCube Markdown Viewer — Requirements and Development Rules
 
-> 이클립스용 Markdown 뷰어/에디터 플러그인
-> 작성일: 2026-10-08 · 상태: 초안
+[English](DEVELOPMENT.md) | [한국어](DEVELOPMENT_ko.md)
+
+> Markdown viewer/editor plug-in for Eclipse
+> Written: 2026-10-08 · Status: draft
 
 ---
 
-## 1. 프로젝트 개요
+## 1. Project overview
 
-| 항목 | 내용 |
+| Item | Description |
 |---|---|
-| 목적 | 이클립스에서 Markdown 파일을 편집하고 렌더링 결과를 미리보기 |
-| 형태 | Eclipse 플러그인 (PDE, Plug-in Project) |
-| 대상 파일 | `*.md`, `*.markdown` |
-| 기반 자산 | 기존에 보유한 **JavaScript 기반 Markdown 뷰어**를 재사용 |
+| Purpose | Edit Markdown files in Eclipse and preview the rendered result |
+| Form | Eclipse plug-in (PDE, Plug-in Project) |
+| Target files | `*.md`, `*.markdown` |
+| Base asset | Reuses the existing **JavaScript-based Markdown viewer** |
 
-## 2. 명명 규칙
+## 2. Naming rules
 
-| 구분 | 값 |
+| Category | Value |
 |---|---|
-| 프로젝트/저장소명 | `kcube-markdown-viewer` |
-| 접두어 | `kcube` (필수) |
-| 번들 ID (Bundle-SymbolicName) | `com.kcube.md` |
-| 표시 이름 (Bundle-Name) | `KCube Markdown Viewer` |
-| 루트 패키지 | `com.kcube.md` |
-| 에디터 ID | `com.kcube.md.editor` |
-| 미리보기 뷰 ID | `com.kcube.md.preview` |
-| 마켓플레이스 표기 | `KCube Markdown Viewer for Eclipse` |
+| Project/repository name | `kcube-markdown-viewer` |
+| Prefix | `kcube` (required) |
+| Bundle ID (Bundle-SymbolicName) | `com.kcube.md` |
+| Display name (Bundle-Name) | `KCube Markdown Viewer` |
+| Root package | `com.kcube.md` |
+| Editor ID | `com.kcube.md.editor` |
+| Preview view ID | `com.kcube.md.preview` |
+| Marketplace name | `KCube Markdown Viewer for Eclipse` |
 
-- 번들 ID·패키지명은 **소문자, 하이픈 없이**, 역도메인 형식 사용
-- 이름 앞에 `Eclipse`를 붙이지 않음 (Eclipse 재단 상표 가이드) → `... for Eclipse` 형태 사용
-- 기능 분리 시 접미어로 구분: `com.kcube.md.core`, `com.kcube.md.ui`
+- Bundle IDs and package names are **lower case, without hyphens**, in reverse-domain form.
+- Do not put `Eclipse` at the beginning of the name (Eclipse Foundation trademark guidelines) → use the `... for Eclipse` form.
+- When functionality is split, distinguish by suffix: `com.kcube.md.core`, `com.kcube.md.ui`.
 
-## 3. 기능 요건
+## 3. Functional requirements
 
-### 3.1 멀티탭 에디터 (주 기능)
-- `.md` 파일을 열면 기본 에디터로 동작 (`default="true"`)
-- **Source 탭**: 이클립스 기본 `TextEditor` 내장
-  - 저장, 다른 이름으로 저장, Undo/Redo, 찾기, dirty(*) 표시 지원
-- **Preview 탭**: SWT `Browser`에 JS 뷰어 로드
-  - Preview 탭으로 전환될 때 최신 내용으로 렌더링
-- 탭 전환 시 Undo/Copy/Find 등 전역 액션이 활성 탭에 맞게 연결/해제될 것
+### 3.1 Multi-page editor (main feature)
+- Works as the default editor when a `.md` file is opened (`default="true"`).
+- **Source tab**: embeds the standard Eclipse `TextEditor`.
+  - Supports save, save as, undo/redo, find, and the dirty (*) indicator.
+- **Preview tab**: loads the JS viewer into an SWT `Browser`.
+  - Renders the latest content when switching to the Preview tab.
+- When switching tabs, global actions such as Undo/Copy/Find are connected to / disconnected from the active tab.
 
-### 3.2 Markdown Preview 뷰 (보조 기능)
-- 별도 뷰(`ViewPart`)로 에디터 옆에 띄워 **실시간 미리보기**
-- 활성 에디터 추적 (`IPartListener2`), `.md` 파일만 대상
-- 문서 변경 감지 (`IDocumentListener`) 후 **300ms 디바운스**로 갱신
+### 3.2 Markdown Preview view (supplementary feature)
+- A separate view (`ViewPart`) placed next to the editor for **live preview**.
+- Tracks the active editor (`IPartListener2`); only `.md` files are targeted.
+- Detects document changes (`IDocumentListener`) and refreshes with a **300 ms debounce**.
 
-### 3.3 렌더링 방식
-- Java에서 Markdown을 직접 변환하지 않고 **JS 뷰어에 텍스트만 전달**
-- `browser.execute("renderMarkdown(...)")` 호출
-- 페이지 로딩 완료(`ProgressListener.completed`) 전에는 호출하지 않음
-- JS 쪽은 본문만 교체하고 **스크롤 위치 유지**
+### 3.3 Rendering approach
+- Java does not convert Markdown itself; it **passes only the text to the JS viewer**.
+- Calls `browser.execute("renderMarkdown(...)")`.
+- Does not call it before the page has finished loading (`ProgressListener.completed`).
+- The JS side replaces only the body and **keeps the scroll position**.
 
-### 3.4 향후 검토 항목
-- [ ] Source 탭 Markdown 문법 하이라이팅 (제목, 굵게, 코드블록 등)
-- [ ] Source | Preview 좌우 분할 탭
-- [ ] 에디터 ↔ 미리보기 스크롤 동기화
-- [ ] 코드 하이라이팅 (highlight.js 등)
-- [ ] 다크 테마 (`prefers-color-scheme`)
-- [ ] 미리보기 링크 클릭 시 이클립스에서 파일 열기 (`BrowserFunction`, JS → Java)
+### 3.4 Items to consider later
+- [ ] Markdown syntax highlighting in the Source tab (headings, bold, code blocks, etc.)
+- [ ] Side-by-side Source | Preview tab
+- [ ] Scroll synchronization between editor and preview
+- [ ] Code highlighting (highlight.js, etc.)
+- [ ] Dark theme (`prefers-color-scheme`)
+- [ ] Open files in Eclipse when a preview link is clicked (`BrowserFunction`, JS → Java)
 
-## 4. 아키텍처
+## 4. Architecture
 
-### 4.1 구성
+### 4.1 Layout
 
-업데이트 사이트 배포를 위해 **Maven Tycho 멀티 모듈** 구조로 구성한다. 모듈 배치는 `kcube-maven-goals-plugin` 과 동일한 **루트 직하 평면 구조**를 따른다. (상세는 8장 참고)
+For update-site distribution, the project is organized as a **Maven Tycho multi-module** build. The module layout follows the same **flat layout directly under the root** as `kcube-maven-goals-plugin`. (See chapter 8 for details.)
 
 ```
 kcube-markdown-viewer/
-├── pom.xml                                 # 부모 POM (Tycho 설정, p2 저장소, 모듈 목록)
+├── pom.xml                                 # parent POM (Tycho settings, p2 repository, module list)
 ├── .gitignore
-├── com.kcube.md/                           # 플러그인 (실제 코드)
+├── com.kcube.md/                           # plug-in (the actual code)
 │   ├── META-INF/MANIFEST.MF
 │   ├── plugin.xml
-│   ├── build.properties                    # web/, icons/ 포함 필수
+│   ├── build.properties                    # must include web/ and icons/
 │   ├── pom.xml                             # eclipse-plugin
 │   ├── icons/md.png
-│   ├── web/                                # 기존 JS 뷰어 (오프라인 동작)
+│   ├── web/                                # existing JS viewer (works offline)
 │   │   ├── viewer.html
-│   │   ├── css/                            # bootstrap, highlight 테마, MarkDownViewer.css, viewer.css
+│   │   ├── css/                            # bootstrap, highlight theme, MarkDownViewer.css, viewer.css
 │   │   └── js/                             # markdown-it, highlight.js, viewer.js
 │   └── src/com/kcube/md/
 │       ├── editor/
-│       │   ├── MarkdownMultiPageEditor.java    # Source/Preview 탭 에디터
-│       │   └── MarkdownEditorContributor.java  # 전역 액션 연결
+│       │   ├── MarkdownMultiPageEditor.java    # Source/Preview tab editor
+│       │   └── MarkdownEditorContributor.java  # connects global actions
 │       ├── views/
-│       │   └── MarkdownPreviewView.java        # 실시간 미리보기 뷰
+│       │   └── MarkdownPreviewView.java        # live preview view
 │       ├── preview/
-│       │   └── MarkdownBrowser.java            # JS 뷰어 로드 + 렌더링 호출 래퍼
+│       │   └── MarkdownBrowser.java            # wrapper that loads the JS viewer and calls rendering
 │       └── util/
-│           ├── JsUtils.java                    # Java 문자열 → JS 리터럴 변환
-│           └── EditorInputs.java               # md 판별, 이미지 기준 경로
-├── com.kcube.md.feature/                   # 설치 단위 (Feature)
+│           ├── JsUtils.java                    # Java string → JS literal conversion
+│           └── EditorInputs.java               # md detection, image base path
+├── com.kcube.md.feature/                   # installation unit (Feature)
 │   ├── feature.xml
 │   ├── build.properties
 │   └── pom.xml                             # eclipse-feature
-└── com.kcube.md.update-site/               # 업데이트 사이트 (p2 Repository)
+└── com.kcube.md.update-site/               # update site (p2 repository)
     ├── category.xml
     └── pom.xml                             # eclipse-repository
 ```
 
-### 4.2 의존 번들
+### 4.2 Required bundles
 - `org.eclipse.ui`
 - `org.eclipse.ui.editors`
 - `org.eclipse.jface.text`
 - `org.eclipse.core.runtime`
 - `org.slf4j.api`
 
-### 4.3 plugin.xml 확장점
-- `org.eclipse.ui.editors` — 멀티탭 에디터 등록 (`extensions="md,markdown"`)
-- `org.eclipse.ui.views` — Markdown 카테고리 및 Preview 뷰 등록
+### 4.3 plugin.xml extension points
+- `org.eclipse.ui.editors` — registers the multi-page editor (`extensions="md,markdown"`)
+- `org.eclipse.ui.views` — registers the Markdown category and the Preview view
 
-### 4.4 Java ↔ JS 연동 규칙
-- JS 진입점: `renderMarkdown(markdown)` 함수 (기존 뷰어에 추가)
-- 뷰어 페이지 로드: `FrameworkUtil.getBundle(...).getEntry("web/viewer.html")` → `FileLocator.toFileURL()` → `browser.setUrl()`
-- 문자열 전달은 반드시 `JsUtils.toJsString()` 사용
-  - `"`, `\`, `\n`, `\r`, `\u2028`, `\u2029` 이스케이프
-  - `<` → `\u003c` 치환 (`</script>` 주입 방지)
+### 4.4 Java ↔ JS integration rules
+- JS entry point: the `renderMarkdown(markdown)` function (added to the existing viewer)
+- Loading the viewer page: `FrameworkUtil.getBundle(...).getEntry("web/viewer.html")` → `FileLocator.toFileURL()` → `browser.setUrl()`
+- Always use `JsUtils.toJsString()` to pass strings
+  - Escape `"`, `\`, `\n`, `\r`, ` `, ` `
+  - Replace `<` with `<` (prevents `</script>` injection)
 
-## 5. 기술 제약 및 주의사항
+## 5. Technical constraints and notes
 
-| 항목 | 내용 |
+| Item | Description |
 |---|---|
-| Java 버전 | Java 17 |
-| 브라우저 엔진 | Windows는 Edge(WebView2) 권장: `-Dorg.eclipse.swt.browser.DefaultType=edge` |
-| JS 호환성 | 구형 IE 모드가 아닌 Edge/WebKit 기준으로 동작 확인 |
-| 외부 리소스 | **CDN 사용 금지** — 사내망/오프라인 대비, 모든 라이브러리 로컬 포함 |
-| 이미지 경로 | md 파일 기준 상대 경로 → JS에 base 경로 전달하여 보정 필요 |
-| 스크롤 | `setText()` 재로딩 방식 금지 (스크롤 초기화됨), JS로 본문만 교체 |
+| Java version | Java 17 |
+| Browser engine | Edge (WebView2) is recommended on Windows: `-Dorg.eclipse.swt.browser.DefaultType=edge` |
+| JS compatibility | Verified against Edge/WebKit, not legacy IE mode |
+| External resources | **No CDN** — to support internal/offline networks, all libraries are included locally |
+| Image paths | Relative to the md file → the base path must be passed to JS for correction |
+| Scrolling | Do not reload with `setText()` (it resets scrolling); replace only the body with JS |
 
-## 6. 코딩 규칙
+## 6. Coding rules
 
-### 6.1 공통
-- 프로젝트에 기존 프레임워크가 있으면 **그 프레임워크 방식을 따른다**
-- 코드는 Java 17 기준 문법 사용 가능 (패턴 매칭 `instanceof`, switch 화살표, 텍스트 블록 등)
+### 6.1 General
+- If the project already has a framework, **follow that framework's way of doing things**.
+- Java 17 syntax is allowed (pattern-matching `instanceof`, arrow-form switch, text blocks, etc.).
 
-### 6.2 주석
-- **Java의 모든 메소드에 Javadoc 주석** 작성 (`@param`, `@return` 포함)
-- 의미가 분명하지 않은 **필드/변수에도 주석** 작성
-- **JavaScript의 모든 함수에도 JSDoc 주석** 작성
+### 6.2 Comments
+- Write **Javadoc for every Java method** (including `@param` and `@return`).
+- Also comment **fields/variables** whose meaning is not obvious.
+- Write **JSDoc for every JavaScript function**.
 
 ```java
 /**
- * 편집 중인 문서를 JS 뷰어로 전달해 렌더링한다.
+ * Passes the document being edited to the JS viewer for rendering.
  */
 private void refreshPreview() { ... }
 ```
 
 ```javascript
 /**
- * Java(Eclipse)에서 호출하는 렌더링 진입점.
- * @param {string} markdown 원본 Markdown 텍스트
+ * Rendering entry point called from Java (Eclipse).
+ * @param {string} markdown Original Markdown text
  */
 function renderMarkdown(markdown) { ... }
 ```
 
-### 6.3 로그
-- 로거 변수명: `_log` (SLF4J)
-- 로그 호출은 **항상 레벨 체크로 감싼다**
-- 로그 메시지는 **영어**로 작성
-- 파라미터는 `{}` 플레이스홀더 사용
+### 6.3 Logging
+- Logger variable name: `_log` (SLF4J)
+- **Always wrap log calls in a level check**
+- Write log messages in **English**
+- Use `{}` placeholders for parameters
 
 ```java
-/** 로거 */
+/** Logger */
 private static final Logger _log = LoggerFactory.getLogger(MarkdownMultiPageEditor.class);
 
 if (_log.isDebugEnabled()) {
@@ -174,41 +176,41 @@ if (_log.isErrorEnabled()) {
 }
 ```
 
-## 7. 개발 환경
+## 7. Development environment
 
 - Eclipse IDE for RCP and RCP Developers
-- 새 프로젝트: File > New > Plug-in Project
-- 실행/디버그: Run As > Eclipse Application (런타임 워크벤치)
-- 배포 빌드: Maven 3.9+ / JDK 17, `mvn clean verify` (8장 참고)
+- New project: File > New > Plug-in Project
+- Run/debug: Run As > Eclipse Application (runtime workbench)
+- Release build: Maven 3.9+ / JDK 17, `mvn clean verify` (see chapter 8)
 
-## 8. 배포 — 업데이트 사이트 설치 구조
+## 8. Distribution — update-site installation structure
 
-### 8.1 목표
-- 사용자는 **Help > Install New Software...** 에서 업데이트 사이트 URL을 추가해 설치
-- 신규 버전 배포 시 **Help > Check for Updates** 로 자동 업데이트
-- 사내망(오프라인) 환경에서는 압축된 업데이트 사이트(zip)를 **Archive...** 로 설치 가능
+### 8.1 Goals
+- Users install by adding the update-site URL in **Help > Install New Software...**.
+- New versions are picked up through **Help > Check for Updates**.
+- In internal (offline) networks, a zipped update site can be installed with **Archive...**.
 
-### 8.2 구성 단위
+### 8.2 Units
 
-| 단위 | ID | 역할 |
+| Unit | ID | Role |
 |---|---|---|
-| Plugin (Bundle) | `com.kcube.md` | 실제 코드, plugin.xml, web 리소스 |
-| Feature | `com.kcube.md.feature` | 설치·업데이트 단위. 플러그인 묶음 + 라이선스/설명 |
-| Update Site | `com.kcube.md.update-site` | p2 Repository 생성 (`content.jar`, `artifacts.jar`, `plugins/`, `features/`) |
+| Plugin (Bundle) | `com.kcube.md` | Actual code, plugin.xml, web resources |
+| Feature | `com.kcube.md.feature` | Installation/update unit. Groups plug-ins and carries license/description |
+| Update Site | `com.kcube.md.update-site` | Generates the p2 repository (`content.jar`, `artifacts.jar`, `plugins/`, `features/`) |
 
-- 사용자에게 보이는 설치 단위는 **Feature**이며, 플러그인을 직접 노출하지 않는다.
-- 기능이 늘어 번들을 분리하면(`com.kcube.md.core`, `com.kcube.md.ui`) Feature에 추가만 하면 된다.
+- The installation unit visible to users is the **Feature**; plug-ins are not exposed directly.
+- If functionality grows and bundles are split (`com.kcube.md.core`, `com.kcube.md.ui`), just add them to the Feature.
 
-### 8.3 빌드 도구
-- **Maven + Eclipse Tycho 4.x** 사용 (CI/명령행 빌드, 재현 가능한 p2 저장소 생성)
-- 빌드 명령: `mvn clean verify`
-- 결과물:
-  - `com.kcube.md.update-site/target/repository/` → 업데이트 사이트 폴더 (웹서버 업로드용)
-  - `com.kcube.md.update-site/target/com.kcube.md.update-site-<버전>.zip` → 오프라인 설치용
+### 8.3 Build tools
+- Uses **Maven + Eclipse Tycho 4.x** (CI/command-line builds, reproducible p2 repository generation).
+- Build command: `mvn clean verify`
+- Outputs:
+  - `com.kcube.md.update-site/target/repository/` → update-site folder (for uploading to a web server)
+  - `com.kcube.md.update-site/target/com.kcube.md.update-site-<version>.zip` → for offline installation
 
-### 8.4 주요 설정 파일
+### 8.4 Main configuration files
 
-**pom.xml (부모)** — 핵심 부분 (`kcube-maven-goals-plugin` 과 동일 방식)
+**pom.xml (parent)** — key parts (same approach as `kcube-maven-goals-plugin`)
 ```xml
 <groupId>com.kcube</groupId>
 <artifactId>kcube-markdown-viewer-parent</artifactId>
@@ -238,13 +240,13 @@ if (_log.isErrorEnabled()) {
 <build>
   <plugins>
     <plugin>  <!-- tycho-maven-plugin, extensions=true -->
-    <plugin>  <!-- target-platform-configuration: win32 / macosx(aarch64, x86_64) / linux 환경 -->
+    <plugin>  <!-- target-platform-configuration: win32 / macosx (aarch64, x86_64) / linux environments -->
   </plugins>
 </build>
 ```
-- 별도 타깃 플랫폼 모듈·`.mvn/extensions.xml` 없이 **p2 저장소를 부모 POM에 직접 선언**한다.
-- 컴파일 레벨은 `Bundle-RequiredExecutionEnvironment: JavaSE-17`(MANIFEST)과 `.settings/org.eclipse.jdt.core.prefs`로 지정한다.
-- `IURIEditorInput` 이 `org.eclipse.ui.ide` 에서 비공개 API로 표시되므로, 플러그인 `.settings/org.eclipse.jdt.core.prefs` 에 `forbiddenReference=warning` 을 둔다.
+- The p2 repository is **declared directly in the parent POM**, without a separate target-platform module or `.mvn/extensions.xml`.
+- The compiler level is set by `Bundle-RequiredExecutionEnvironment: JavaSE-17` (MANIFEST) and `.settings/org.eclipse.jdt.core.prefs`.
+- `IURIEditorInput` is marked as non-API in `org.eclipse.ui.ide`, so the plug-in's `.settings/org.eclipse.jdt.core.prefs` sets `forbiddenReference=warning`.
 
 **MANIFEST.MF (com.kcube.md)**
 ```
@@ -265,8 +267,8 @@ Require-Bundle: org.eclipse.ui.ide,
 Import-Package: org.slf4j;version="[1.7.0,3.0.0)"
 Bundle-ActivationPolicy: lazy
 ```
-- `plugin.xml`에 확장점을 쓰므로 `singleton:=true` 필수
-- SLF4J는 `Require-Bundle`이 아닌 **`Import-Package`** 로 참조 (1.x/2.x 호환)
+- `singleton:=true` is required because `plugin.xml` uses extension points.
+- SLF4J is referenced through **`Import-Package`**, not `Require-Bundle` (1.x/2.x compatible).
 
 **build.properties (com.kcube.md)**
 ```
@@ -278,7 +280,7 @@ bin.includes = META-INF/,\
                icons/,\
                web/
 ```
-- `web/`, `icons/` 누락 시 설치본에서 Preview가 빈 화면이 되므로 반드시 포함
+- If `web/` or `icons/` is missing, the Preview is blank in the installed plug-in, so they must be included.
 
 **feature.xml**
 ```xml
@@ -289,13 +291,13 @@ bin.includes = META-INF/,\
          provider-name="KCube">
    <description>Markdown editor and preview for Eclipse.</description>
    <copyright>Copyright (c) KCube.</copyright>
-   <license url="">License text</license>
+   <license url="https://www.apache.org/licenses/LICENSE-2.0">License text</license>
 
    <plugin id="com.kcube.md" version="0.0.0" unpack="false"/>
 </feature>
 ```
-- `unpack="false"`: jar 그대로 설치. web 리소스는 `FileLocator.toFileURL()`이 실행 시 캐시 폴더로 풀어 주므로 jar 형태로도 동작
-- 이클립스 기본 번들(UI, 에디터, SLF4J)은 Feature에 **포함하지 않고** 의존성으로만 선언
+- `unpack="false"`: installs the jar as-is. `FileLocator.toFileURL()` extracts the web resources into a cache folder at runtime, so it works in jar form.
+- Default Eclipse bundles (UI, editors, SLF4J) are **not included** in the Feature; they are declared only as dependencies.
 
 **category.xml (com.kcube.md.update-site)**
 ```xml
@@ -309,33 +311,33 @@ bin.includes = META-INF/,\
    </category-def>
 </site>
 ```
-- 카테고리가 없으면 설치 화면에서 "Group items by category" 체크 시 목록에 안 보이므로 반드시 정의
-- 향후 다른 KCube 플러그인(예: 링크뷰)도 같은 `KCube Tools` 카테고리로 묶어 **하나의 업데이트 사이트**에서 배포 가능
+- Without a category, the item does not appear in the install dialog when "Group items by category" is checked, so one must be defined.
+- Other KCube plug-ins (for example a link view) can be grouped in the same `KCube Tools` category and distributed from **a single update site**.
 
 **com.kcube.md.update-site/pom.xml**
 ```xml
 <artifactId>com.kcube.md.update-site</artifactId>
 <packaging>eclipse-repository</packaging>
 ```
-- 각 모듈 packaging: bundle → `eclipse-plugin`, feature → `eclipse-feature`, site → `eclipse-repository`
+- Packaging per module: bundle → `eclipse-plugin`, feature → `eclipse-feature`, site → `eclipse-repository`.
 
-### 8.5 버전 규칙
+### 8.5 Versioning rules
 
-| 위치 | 형식 | 예 |
+| Location | Format | Example |
 |---|---|---|
 | MANIFEST.MF / feature.xml | `major.minor.micro.qualifier` | `1.0.0.qualifier` |
 | pom.xml | `major.minor.micro-SNAPSHOT` | `1.0.0-SNAPSHOT` |
-| 빌드 결과 | qualifier → 빌드 시각 치환 | `1.0.0.202610081530` |
+| Build result | qualifier replaced by build time | `1.0.0.202610081530` |
 
-- 세 위치의 버전(major.minor.micro)은 **항상 일치**시킨다 (불일치 시 Tycho 빌드 실패)
-- 일괄 변경: `mvn org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion=1.1.0-SNAPSHOT`
-- qualifier가 매 빌드마다 증가하므로 같은 버전이라도 **Check for Updates로 갱신 인식**
-- 버전 증가 기준: 버그 수정 → micro, 기능 추가 → minor, 호환성 깨짐 → major
+- The versions (major.minor.micro) in all three places must **always match** (a mismatch fails the Tycho build).
+- Bulk change: `mvn org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion=1.1.0-SNAPSHOT`
+- The qualifier increases with every build, so even the same version is **recognized as an update by Check for Updates**.
+- Bump rules: bug fix → micro, new feature → minor, breaking change → major.
 
-### 8.6 배포·호스팅
-- `target/repository/` 내용을 **정적 웹서버**(사내 웹서버, Nginx, Apache, GitHub Pages 등)에 그대로 업로드
-- 업데이트 사이트 URL 예: `https://<서버>/eclipse/kcube/`
-- 버전별 이력을 남기려면 버전 폴더 + **Composite Repository** 구성 권장
+### 8.6 Distribution and hosting
+- Upload the contents of `target/repository/` as-is to a **static web server** (internal web server, Nginx, Apache, GitHub Pages, etc.).
+- Example update-site URL: `https://<server>/eclipse/kcube/`
+- To keep per-version history, a version folder plus a **Composite Repository** is recommended.
   ```
   /eclipse/kcube/
   ├── compositeContent.xml
@@ -343,18 +345,18 @@ bin.includes = META-INF/,\
   ├── 1.0.0/
   └── 1.1.0/
   ```
-- HTTPS 사용 권장 (HTTP는 최신 이클립스에서 경고 표시)
+- HTTPS is recommended (recent Eclipse versions warn about HTTP).
 
-### 8.7 서명 (선택)
-- 미서명 시 설치 중 **"Unsigned content" 경고**가 뜨지만 설치는 가능
-- 사내 배포는 미서명 허용, 외부(마켓플레이스) 배포 시 코드 서명 인증서로 jar 서명 권장
-  - Tycho: `tycho-gpg-plugin`(PGP 서명) 또는 `maven-jarsigner-plugin` 사용
+### 8.7 Signing (optional)
+- Unsigned content triggers an **"Unsigned content" warning** during installation, but installation still works.
+- Unsigned is acceptable for internal distribution; for external (marketplace) distribution, signing the jars with a code-signing certificate is recommended.
+  - Tycho: use `tycho-gpg-plugin` (PGP signing) or `maven-jarsigner-plugin`.
 
-### 8.8 설치 검증 체크리스트
-- [ ] 깨끗한 Eclipse(2024-12 이상)에 업데이트 사이트 URL로 설치 성공
-- [ ] zip 파일(Archive)로 오프라인 설치 성공
-- [ ] 설치 후 `.md` 파일이 KCube Markdown Viewer로 열림
-- [ ] Preview 탭에서 web 리소스 정상 로드 (빈 화면 아님)
-- [ ] Window > Show View > Markdown > Markdown Preview 표시
-- [ ] 버전 올려 재배포 후 Check for Updates로 업데이트 감지
-- [ ] Windows / macOS 양쪽에서 Browser(Edge/WebKit) 동작 확인
+### 8.8 Installation verification checklist
+- [ ] Installs successfully from the update-site URL into a clean Eclipse (2024-12 or later)
+- [ ] Offline installation from the zip file (Archive) succeeds
+- [ ] After installation, `.md` files open with KCube Markdown Viewer
+- [ ] Web resources load correctly on the Preview tab (not blank)
+- [ ] Window > Show View > Markdown > Markdown Preview is displayed
+- [ ] After bumping the version and redeploying, Check for Updates detects the update
+- [ ] Browser (Edge/WebKit) works on both Windows and macOS
