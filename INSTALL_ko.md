@@ -106,6 +106,33 @@ open -a Eclipse --args -clean
 
 > macOS 에서 내려받은 jar 에 "다운로드한 파일" 격리 속성이 붙어 문제가 되면 `xattr -d com.apple.quarantine <jar 경로>` 를 실행한 뒤 복사한다.
 
+## 설치 (Install New Software, URL 방식)
+
+`dropins` 폴더를 직접 다루지 않고 설치하려는 경우에 사용합니다. Eclipse 가 GitHub Release 에서 플러그인을 바로 내려받습니다. (github.com 인터넷 접속 필요)
+
+1. Eclipse 에서 **Help > Install New Software…** 를 선택하고 **Add…** 를 누릅니다.
+2. 아래처럼 입력하고 **Add** 를 누릅니다.
+
+   | 항목 | 값 |
+   |---|---|
+   | Name | `KCube Markdown Viewer` |
+   | Location | `jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v<버전>/kcube-markdown-viewer-update-site-<버전>.zip!/` |
+
+   1.0.0 버전 예시:
+
+   ```
+   jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v1.0.0/kcube-markdown-viewer-update-site-1.0.0.zip!/
+   ```
+
+   앞의 `jar:` 와 끝의 `!/` 는 반드시 유지합니다. zip 안의 업데이트 사이트를 그대로 읽으라는 뜻입니다.
+3. **KCube Tools** 카테고리의 **KCube Markdown Viewer** 를 선택하고 **Next** 를 누릅니다.
+4. 라이선스에 동의하고 **Finish** 를 누릅니다. 서명되지 않은 콘텐츠 경고가 나오면 **Install anyway** 를 선택합니다.
+5. 안내에 따라 Eclipse 를 재시작합니다. (최초 설치 시 `-clean` 으로 한 번 시작하는 것을 권장합니다.)
+
+사내 프록시 등으로 URL 에 접근할 수 없으면 Releases 페이지에서 zip 을 내려받아 **Add… > Archive…** 로 설치하세요. 업데이트는 새 버전 번호로 같은 절차를 반복하거나, 같은 Location 이 등록되어 있다면 **Help > Check for Updates** 를 사용합니다.
+
+이 방식으로 설치한 플러그인은 **Help > About Eclipse IDE > Installation Details** 에서 KCube Markdown Viewer 를 선택하고 **Uninstall…** 로 삭제합니다.
+
 ## 설치 확인
 
 1. 아무 `.md` 파일을 연다 (Package Explorer 에서 더블클릭).

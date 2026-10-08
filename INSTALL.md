@@ -106,6 +106,33 @@ All you need is a single jar file from the developer. No source code, Maven, or 
 
 > On macOS, if the downloaded jar carries the "downloaded file" quarantine attribute and causes problems, run `xattr -d com.apple.quarantine <path to jar>` before copying it.
 
+## Installation (Install New Software, by URL)
+
+Use this if you prefer not to touch the `dropins` folder. Eclipse downloads the plug-in directly from the GitHub Release (internet access to github.com is required).
+
+1. In Eclipse, choose **Help > Install New Software…** and click **Add…**.
+2. Enter the following and click **Add**.
+
+   | Field | Value |
+   |---|---|
+   | Name | `KCube Markdown Viewer` |
+   | Location | `jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v<version>/kcube-markdown-viewer-update-site-<version>.zip!/` |
+
+   For example, for version 1.0.0:
+
+   ```
+   jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v1.0.0/kcube-markdown-viewer-update-site-1.0.0.zip!/
+   ```
+
+   Keep the `jar:` prefix and the trailing `!/`. They tell Eclipse to read the update site straight from inside the zip.
+3. Select **KCube Markdown Viewer** under the **KCube Tools** category and click **Next**.
+4. Accept the license, and click **Finish**. If a security warning about unsigned content appears, choose **Install anyway**.
+5. Restart Eclipse when prompted. (Starting it once with `-clean` is recommended for the first installation.)
+
+If the URL cannot be reached (for example behind a corporate proxy), download the zip from the Releases page and use **Add… > Archive…** instead. To update, repeat the steps with the new version number, or use **Help > Check for Updates** if the same location is registered.
+
+To uninstall a plug-in installed this way, use **Help > About Eclipse IDE > Installation Details**, select KCube Markdown Viewer, and click **Uninstall…**.
+
 ## Verifying the installation
 
 1. Open any `.md` file (double-click it in Package Explorer).
