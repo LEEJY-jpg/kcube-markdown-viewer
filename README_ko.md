@@ -21,7 +21,7 @@ Eclipse에서 Markdown(`.md`, `.markdown`) 파일을 **Source / Preview** 탭으
 
 ## 설치
 
-jar 한 개를 Eclipse `dropins` 폴더에 복사하고 `-clean` 으로 재시작하면 됩니다. 자세한 절차와 문제 해결은 [INSTALL_ko.md](INSTALL_ko.md) 의 *일반 사용자 설치 가이드*를 참고하세요.
+jar 한 개를 Eclipse `dropins` 폴더에 복사하고 `-clean` 으로 재시작하면 됩니다. 자세한 절차와 문제 해결은 [INSTALL_ko.md](docs/INSTALL_ko.md) 의 *일반 사용자 설치 가이드*를 참고하세요.
 
 ## 빌드
 
@@ -32,7 +32,7 @@ JDK 17 과 Maven 이 필요합니다. Maven Tycho 로 빌드합니다.
 ./build.sh --install   # 빌드 후 Eclipse dropins 에 설치
 ```
 
-프로젝트 구조와 설계는 [DEVELOPMENT_ko.md](DEVELOPMENT_ko.md) 를 참고하세요.
+프로젝트 구조와 설계는 [DEVELOPMENT_ko.md](docs/DEVELOPMENT_ko.md) 를 참고하세요.
 
 ```
 com.kcube.md              플러그인 (에디터, 뷰, web/ 뷰어)

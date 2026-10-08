@@ -21,7 +21,7 @@ An Eclipse plug-in that lets you edit Markdown (`.md`, `.markdown`) files and pr
 
 ## Installation
 
-Copy a single jar into the Eclipse `dropins` folder and restart with `-clean`. See the *End-user installation guide* in [INSTALL.md](INSTALL.md) for the full procedure and troubleshooting.
+Copy a single jar into the Eclipse `dropins` folder and restart with `-clean`. See the *End-user installation guide* in [INSTALL.md](docs/INSTALL.md) for the full procedure and troubleshooting.
 
 ## Build
 
@@ -32,7 +32,7 @@ JDK 17 and Maven are required. The build uses Maven Tycho.
 ./build.sh --install   # builds, then installs into the Eclipse dropins folder
 ```
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for the project structure and design.
+See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for the project structure and design.
 
 ```
 com.kcube.md              Plug-in (editor, view, web/ viewer)
