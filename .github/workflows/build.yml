@@ -32,20 +32,10 @@ jobs:
 
       - name: Collect artifacts
         run: |
-          {
-            set -ex
-            find . -path '*/target/*' \( -name '*.jar' -o -name '*.zip' \) -maxdepth 4
-            mkdir -p dist
-            JAR="$(ls com.kcube.md/target/com.kcube.md-*.jar | grep -v -e sources -e javadoc | head -1)"
-            ZIP="$(ls com.kcube.md.update-site/target/com.kcube.md.update-site-*.zip | head -1)"
-            VERSION="$(unzip -p "$JAR" META-INF/MANIFEST.MF | tr -d '\r' | sed -n 's/^Bundle-Version: *//p' | cut -d. -f1-3)"
-            cp -f "$JAR" "dist/com.kcube.md.kcube-markdown-viewer-${VERSION}.jar"
-            cp -f "$ZIP" "dist/kcube-markdown-viewer-update-site-${VERSION}.zip"
-            ls -l dist
-          } > collect.log 2>&1 || {
-            echo "::error title=Collect failed::$(tr '\n' '|' < collect.log | cut -c1-1500)"
-            exit 1
-          }
+          rc=0
+          bash .github/scripts/collect.sh > collect.log 2>&1 || rc=$?
+          echo "::notice title=collect rc=$rc::$(tr '\n' '|' < collect.log | cut -c1-1500)"
+          exit $rc
 
       - uses: actions/upload-artifact@v4
         with:
