@@ -9,4 +9,40 @@
     </parent>
     <artifactId>com.kcube.md.update-site</artifactId>
     <packaging>eclipse-repository</packaging>
+
+    <build>
+        <plugins>
+            <!-- mvn install 시에도 build.sh 와 같은 이름으로 루트 dist/ 에 플러그인 jar 와 update-site zip 을 남긴다. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-to-dist</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <property name="dist.dir" location="${project.basedir}/../dist"/>
+                                <delete dir="${dist.dir}"/>
+                                <mkdir dir="${dist.dir}"/>
+                                <!-- 파일명에는 qualifier/SNAPSHOT 을 빼고 major.minor.micro 까지만 쓴다. -->
+                                <copy todir="${dist.dir}">
+                                    <fileset dir="${project.basedir}/../com.kcube.md/target" includes="com.kcube.md-*.jar" excludes="*-sources.jar"/>
+                                    <regexpmapper from="^com\.kcube\.md-([0-9]+\.[0-9]+\.[0-9]+).*\.jar$$" to="com.kcube.md.kcube-markdown-viewer-\1.jar"/>
+                                </copy>
+                                <copy todir="${dist.dir}">
+                                    <fileset dir="${project.build.directory}" includes="com.kcube.md.update-site-*.zip"/>
+                                    <regexpmapper from="^com\.kcube\.md\.update-site-([0-9]+\.[0-9]+\.[0-9]+).*\.zip$$" to="kcube-markdown-viewer-update-site-\1.zip"/>
+                                </copy>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
