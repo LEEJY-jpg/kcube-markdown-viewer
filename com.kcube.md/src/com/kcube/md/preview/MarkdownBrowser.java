@@ -49,6 +49,15 @@ public class MarkdownBrowser {
 	/** 로딩 완료 전에 요청된 이미지 기준 경로 */
 	private String _baseUri = "";
 
+	/** 마지막으로 브라우저에 전달한 Markdown 원문 (전달한 적 없으면 null) */
+	private String _appliedMarkdown;
+
+	/** 마지막으로 브라우저에 전달한 이미지 기준 경로 (전달한 적 없으면 null) */
+	private String _appliedBaseUri;
+
+	/** 마지막으로 적용한 글꼴 스크립트 (적용한 적 없으면 null) */
+	private String _appliedFontScript;
+
 	/** Eclipse 텍스트 글꼴이 바뀌면 미리보기 글꼴도 다시 적용하는 리스너 */
 	private final IPropertyChangeListener _fontListener = event -> onPropertyChange(event.getProperty());
 
@@ -64,6 +73,10 @@ public class MarkdownBrowser {
 			public void completed(ProgressEvent event) {
 				String url = _browser.getUrl();
 				if (url != null && url.contains("viewer.html")) {
+					// 페이지가 (다시) 로드되면 본문이 비어 있으므로 전달 이력을 버린다
+					_appliedMarkdown = null;
+					_appliedBaseUri = null;
+					_appliedFontScript = null;
 					_ready = true;
 					apply();
 				}
@@ -133,15 +146,27 @@ public class MarkdownBrowser {
 
 	/**
 	 * 보관 중인 Markdown 을 JS 의 renderMarkdown() 으로 전달한다.
+	 * <p>
+	 * 내용·기준 경로·글꼴이 마지막 전달과 같으면 브라우저 호출을 생략한다.
 	 */
 	private void apply() {
 		if (!_ready || _browser.isDisposed()) {
 			return;
 		}
-		String script = fontScript() + "renderMarkdown(" + JsUtils.toJsString(_markdown) + "," + JsUtils.toJsString(_baseUri) + ");";
-		if (!_browser.execute(script) && _log.isWarnEnabled()) {
-			_log.warn("Failed to execute renderMarkdown script");
+		String font = fontScript();
+		if (_markdown.equals(_appliedMarkdown) && _baseUri.equals(_appliedBaseUri) && font.equals(_appliedFontScript)) {
+			return;
 		}
+		String script = font + "renderMarkdown(" + JsUtils.toJsString(_markdown) + "," + JsUtils.toJsString(_baseUri) + ");";
+		if (!_browser.execute(script)) {
+			if (_log.isWarnEnabled()) {
+				_log.warn("Failed to execute renderMarkdown script");
+			}
+			return;
+		}
+		_appliedMarkdown = _markdown;
+		_appliedBaseUri = _baseUri;
+		_appliedFontScript = font;
 	}
 
 	/**

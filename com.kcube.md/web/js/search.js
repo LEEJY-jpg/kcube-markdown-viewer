@@ -14,6 +14,10 @@ var searchHits = [];
 var searchIndex = -1;
 /** IME 조합 중 여부 (한글 입력 중간 상태 검색 방지) */
 var searchComposing = false;
+/** 검색어 입력 디바운스 지연 시간(ms) */
+var SEARCH_DEBOUNCE_MS = 150;
+/** 예약된 검색 디바운스 타이머 ID (없으면 0) */
+var searchDebounceTimer = 0;
 
 /**
  * 정규식 특수문자를 이스케이프한다.
@@ -35,13 +39,14 @@ function openSearch() {
 	}
 	searchInput.focus();
 	searchInput.select();
-	runSearch(false);
+	runSearch(false, true);
 }
 
 /**
  * 검색바를 닫고 강조를 제거한다.
  */
 function closeSearch() {
+	cancelScheduledSearch();
 	clearHighlights();
 	searchBar.style.display = 'none';
 }
@@ -70,6 +75,20 @@ function clearHighlights() {
 }
 
 /**
+ * 접힌 코드 블록 안에 있는지 확인한다. 인라인 스타일만 보므로 레이아웃을 건드리지 않는다.
+ * @param {Element} el 검사할 요소
+ * @returns {boolean} 접혀서 보이지 않으면 true
+ */
+function isCollapseHidden(el) {
+	for (var node = el; node && node !== content; node = node.parentElement) {
+		if (node.style && node.style.display === 'none') {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * 검색 대상 텍스트 노드인지 판단한다 (복사 버튼/언어 라벨 및 숨겨진 영역 제외).
  * @param {Text} node 텍스트 노드
  * @returns {boolean} 대상 여부
@@ -79,14 +98,38 @@ function isSearchable(node) {
 	if (!el || el.closest('.code-header, button, script, style')) {
 		return false;
 	}
-	return el.getClientRects().length > 0;
+	return !isCollapseHidden(el);
+}
+
+/**
+ * 예약된 디바운스 검색이 있으면 취소한다.
+ */
+function cancelScheduledSearch() {
+	if (searchDebounceTimer) {
+		clearTimeout(searchDebounceTimer);
+		searchDebounceTimer = 0;
+	}
+}
+
+/**
+ * 검색어 입력에 대한 검색을 디바운스해 예약한다. 타이핑 중에는 스크롤하지 않는다.
+ */
+function scheduleSearch() {
+	if (searchDebounceTimer) {
+		clearTimeout(searchDebounceTimer);
+	}
+	searchDebounceTimer = setTimeout(function() {
+		searchDebounceTimer = 0;
+		runSearch(false, false);
+	}, SEARCH_DEBOUNCE_MS);
 }
 
 /**
  * 현재 검색어로 본문을 다시 검색해 강조한다.
  * @param {boolean} keepIndex true 면 이전 선택 위치를 최대한 유지한다 (재렌더링 시)
+ * @param {boolean} scroll true 면 선택된 일치 항목으로 스크롤한다
  */
-function runSearch(keepIndex) {
+function runSearch(keepIndex, scroll) {
 	var previous = keepIndex ? searchIndex : 0;
 	clearHighlights();
 	var query = searchInput.value;
@@ -106,7 +149,7 @@ function runSearch(keepIndex) {
 		highlightNode(nodes[i], regex);
 	}
 	if (searchHits.length > 0) {
-		selectHit(Math.min(Math.max(previous, 0), searchHits.length - 1));
+		selectHit(Math.min(Math.max(previous, 0), searchHits.length - 1), scroll);
 	} else {
 		updateCount();
 	}
@@ -149,17 +192,20 @@ function highlightNode(node, regex) {
 }
 
 /**
- * 지정한 일치 항목을 선택하고 화면 중앙으로 스크롤한다.
+ * 지정한 일치 항목을 선택한다.
  * @param {number} index 일치 인덱스
+ * @param {boolean} scroll true 가 아니면 화면 스크롤을 하지 않는다 (타이핑 중 호출용)
  */
-function selectHit(index) {
+function selectHit(index, scroll) {
 	if (searchIndex >= 0 && searchHits[searchIndex]) {
 		searchHits[searchIndex].className = 'kc-hit';
 	}
 	searchIndex = index;
 	var hit = searchHits[index];
 	hit.className = 'kc-hit kc-hit-active';
-	hit.scrollIntoView({ block: 'center' });
+	if (scroll !== false) {
+		hit.scrollIntoView({ block: 'center' });
+	}
 	updateCount();
 }
 
@@ -168,6 +214,12 @@ function selectHit(index) {
  * @param {number} step 1(다음) 또는 -1(이전)
  */
 function moveHit(step) {
+	if (searchDebounceTimer) {
+		// 입력이 아직 반영되지 않았으면 먼저 검색을 끝내고 첫 일치 항목으로 이동한다
+		cancelScheduledSearch();
+		runSearch(false, true);
+		return;
+	}
 	if (searchHits.length === 0) {
 		return;
 	}
@@ -192,18 +244,18 @@ function updateCount() {
  */
 function reapplySearch() {
 	if (searchBar.style.display === 'flex') {
-		runSearch(true);
+		runSearch(true, true);
 	}
 }
 
 searchInput.addEventListener('compositionstart', function() { searchComposing = true; });
 searchInput.addEventListener('compositionend', function() {
 	searchComposing = false;
-	runSearch(false);
+	scheduleSearch();
 });
 searchInput.addEventListener('input', function() {
 	if (!searchComposing) {
-		runSearch(false);
+		scheduleSearch();
 	}
 });
 searchInput.addEventListener('keydown', function(e) {
