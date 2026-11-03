@@ -17,6 +17,26 @@ body {
 	font-size: 12px;
 }
 
+/* mermaid 다이어그램 */
+.MarkDownViewer pre.kc-mermaid {
+	background: transparent;
+	border: none;
+	padding: 0;
+	text-align: center;
+	white-space: normal;
+	overflow-x: auto;
+}
+.MarkDownViewer pre.kc-mermaid svg {
+	max-width: 100%;
+	height: auto;
+}
+.MarkDownViewer .kc-mermaid-error {
+	text-align: left;
+	white-space: pre-wrap;
+	color: #c0392b;
+	font-size: 12px;
+}
+
 /* 검색바 및 검색 결과 강조 */
 #search-bar {
 	position: fixed;

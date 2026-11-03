@@ -24,6 +24,9 @@ function escapeHtml(str) {
  * @returns {string} 코드 블록 HTML
  */
 function highlightCode(str, lang) {
+	if (lang === 'mermaid' && window.mermaid) {
+		return '<pre class="kc-mermaid" data-source="' + escapeHtml(str) + '"></pre>';
+	}
 	var label = escapeHtml(lang || 'Text');
 	var body;
 	if (lang && window.hljs && hljs.getLanguage(lang)) {
@@ -74,6 +77,7 @@ function applyFont(family, sizePx) {
 	var face = '"' + family.replace(/["\\]/g, '') + '", monospace';
 	style.textContent = '.MarkDownViewer, .MarkDownViewer * { font-family: ' + face + ' !important; }'
 		+ '.MarkDownViewer { font-size: ' + sizePx + 'px !important; }'
+		+ '.MarkDownViewer .kc-mermaid, .MarkDownViewer .kc-mermaid * { font-family: "trebuchet ms", verdana, arial, sans-serif !important; }'
 		+ '.MarkDownViewer pre, .MarkDownViewer code { font-size: 1em !important; }'
 		+ '.MarkDownViewer h1 { font-size: 1.6em !important; }'
 		+ '.MarkDownViewer h2 { font-size: 1.4em !important; }'
@@ -94,6 +98,93 @@ function renderMarkdown(markdown, baseUri) {
 	window.scrollTo(scrollX, scrollY);
 	if (typeof reapplySearch === 'function') {
 		reapplySearch();
+	}
+	renderMermaidBlocks();
+}
+
+/** mermaid 렌더링 결과(SVG) 캐시. 키는 테마 + 원문이며 같은 원문은 다시 그리지 않는다. */
+var mermaidCache = {};
+/** 캐시에 저장된 항목 수 (한도를 넘으면 캐시를 비운다) */
+var mermaidCacheSize = 0;
+/** 블록 순서별 직전 SVG. 재렌더 중 높이가 줄어 스크롤이 튀는 것을 막는 임시 표시용 */
+var mermaidLastSvg = [];
+/** 렌더링 세대 번호. 더 새로운 렌더링이 시작되면 이전 비동기 작업은 결과를 버린다. */
+var mermaidSeq = 0;
+/** mermaid 렌더링 요소 ID 생성용 카운터 */
+var mermaidId = 0;
+/** mermaid 에 마지막으로 초기화한 테마 (없으면 빈 문자열) */
+var mermaidTheme = '';
+/** 캐시 최대 항목 수 */
+var MERMAID_CACHE_LIMIT = 100;
+
+/**
+ * 본문 배경이 어두운지 판단한다. mermaid 테마(dark/default) 선택에 사용한다.
+ * @returns {boolean} 어두운 배경이면 true
+ */
+function isDarkBackground() {
+	var m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(getComputedStyle(document.body).backgroundColor);
+	return !!m && (0.299 * m[1] + 0.587 * m[2] + 0.114 * m[3]) < 128;
+}
+
+/**
+ * 본문의 mermaid 코드 블록을 SVG 다이어그램으로 바꾼다.
+ * 캐시된 블록은 즉시(동기) 채우고, 나머지는 비동기로 그린다. 문법 오류는 해당 블록에만 표시한다.
+ * @returns {Promise<void>} 모든 블록 처리가 끝나면 이행되는 Promise
+ */
+async function renderMermaidBlocks() {
+	var blocks = content.querySelectorAll('pre.kc-mermaid');
+	if (!blocks.length || !window.mermaid) {
+		mermaidLastSvg = [];
+		return;
+	}
+	var theme = isDarkBackground() ? 'dark' : 'default';
+	if (theme !== mermaidTheme) {
+		mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', suppressErrorRendering: true, theme: theme });
+		mermaidTheme = theme;
+	}
+	var seq = ++mermaidSeq;
+	mermaidLastSvg.length = blocks.length;
+
+	var pending = [];
+	for (var i = 0; i < blocks.length; i++) {
+		var cached = mermaidCache[theme + '\n' + blocks[i].getAttribute('data-source')];
+		if (cached !== undefined) {
+			blocks[i].innerHTML = cached;
+			mermaidLastSvg[i] = cached;
+		} else {
+			if (mermaidLastSvg[i]) {
+				blocks[i].innerHTML = mermaidLastSvg[i];
+			}
+			pending.push(i);
+		}
+	}
+
+	for (var j = 0; j < pending.length; j++) {
+		var index = pending[j];
+		var block = blocks[index];
+		var source = block.getAttribute('data-source');
+		var id = 'kc-mermaid-' + (++mermaidId);
+		var html;
+		try {
+			html = (await mermaid.render(id, source)).svg;
+			if (mermaidCacheSize >= MERMAID_CACHE_LIMIT) {
+				mermaidCache = {};
+				mermaidCacheSize = 0;
+			}
+			mermaidCache[theme + '\n' + source] = html;
+			mermaidCacheSize++;
+			mermaidLastSvg[index] = html;
+		} catch (err) {
+			var leftover = document.getElementById('d' + id);
+			if (leftover) {
+				leftover.remove();
+			}
+			html = '<div class="kc-mermaid-error">' + escapeHtml((err && err.message) || err) + '</div>';
+		}
+		if (seq !== mermaidSeq) {
+			return;
+		}
+		block.innerHTML = html;
 	}
 }
 
