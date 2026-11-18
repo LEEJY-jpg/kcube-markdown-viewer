@@ -43,14 +43,46 @@ function highlightCode(str, lang) {
 		'</pre>';
 }
 
-/** markdown-it 인스턴스 (html:false — 본문 내 원시 HTML 은 렌더링하지 않는다) */
+/**
+ * markdown-it 인스턴스. html:true 이지만 원시 HTML 은 아래 html_inline/html_block 규칙에서
+ * &lt;br&gt; 만 통과시키고 나머지는 이스케이프해 텍스트로 보여준다 (sanitizer 없음).
+ */
 var md = window.markdownit({
-	html: false,
+	html: true,
 	linkify: true,
 	typographer: true,
 	breaks: false,
 	highlight: highlightCode
 });
+
+/** 허용하는 원시 HTML: 하나 이상의 &lt;br&gt;, &lt;br/&gt;, &lt;br /&gt; (공백 허용) */
+var ALLOWED_HTML = /^(\s*<br\s*\/?>\s*)+$/i;
+
+/**
+ * 인라인 원시 HTML 을 렌더링한다. &lt;br&gt; 는 줄바꿈으로, 나머지는 이스케이프한 텍스트로 출력한다.
+ * @param {Array} tokens 토큰 목록
+ * @param {number} idx 현재 토큰 인덱스
+ * @returns {string} 출력 HTML
+ */
+md.renderer.rules.html_inline = function(tokens, idx) {
+	var html = tokens[idx].content;
+	return ALLOWED_HTML.test(html) ? '<br>' : escapeHtml(html);
+};
+
+/**
+ * 블록 원시 HTML 을 렌더링한다. &lt;br&gt; 만 있는 줄은 줄바꿈으로, 나머지는 이스케이프해
+ * 문단으로 출력한다 (html:false 일 때와 같은 모양).
+ * @param {Array} tokens 토큰 목록
+ * @param {number} idx 현재 토큰 인덱스
+ * @returns {string} 출력 HTML
+ */
+md.renderer.rules.html_block = function(tokens, idx) {
+	var html = tokens[idx].content;
+	if (ALLOWED_HTML.test(html)) {
+		return html.match(/<br\s*\/?>/gi).map(function() { return '<br>'; }).join('') + '\n';
+	}
+	return '<p>' + escapeHtml(html.replace(/\n+$/, '')) + '</p>\n';
+};
 
 /**
  * 인라인 코드를 클릭하면 복사되도록 렌더링한다.
