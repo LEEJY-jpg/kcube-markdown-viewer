@@ -24,7 +24,7 @@ function escapeHtml(str) {
  * @returns {string} 코드 블록 HTML
  */
 function highlightCode(str, lang) {
-	if (lang === 'mermaid' && window.mermaid) {
+	if (lang === 'mermaid') {
 		return '<pre class="kc-mermaid" data-source="' + escapeHtml(str) + '"></pre>';
 	}
 	var label = escapeHtml(lang || 'Text');
@@ -148,6 +148,39 @@ var mermaidId = 0;
 var mermaidTheme = '';
 /** 캐시 최대 항목 수 */
 var MERMAID_CACHE_LIMIT = 100;
+/** mermaid.min.js 로딩 Promise. 크기가 커서(약 2.5MB) mermaid 블록이 처음 나올 때만 불러온다. */
+var mermaidLoading = null;
+
+/**
+ * mermaid.min.js 를 한 번만 동적으로 불러온다. 실패하면 다음 호출에서 다시 시도한다.
+ * @returns {Promise<void>} 로딩이 끝나면 이행되는 Promise
+ */
+function loadMermaid() {
+	if (window.mermaid) {
+		return Promise.resolve();
+	}
+	if (!mermaidLoading) {
+		mermaidLoading = new Promise(function(resolve, reject) {
+			var script = document.createElement('script');
+			script.src = 'js/mermaid.min.js';
+			script.onload = function() {
+				if (window.mermaid) {
+					resolve();
+				} else {
+					mermaidLoading = null;
+					reject(new Error('mermaid is not defined after loading js/mermaid.min.js'));
+				}
+			};
+			script.onerror = function() {
+				mermaidLoading = null;
+				script.remove();
+				reject(new Error('Failed to load js/mermaid.min.js'));
+			};
+			document.head.appendChild(script);
+		});
+	}
+	return mermaidLoading;
+}
 
 /**
  * 본문 배경이 어두운지 판단한다. mermaid 테마(dark/default) 선택에 사용한다.
@@ -164,17 +197,33 @@ function isDarkBackground() {
  * @returns {Promise<void>} 모든 블록 처리가 끝나면 이행되는 Promise
  */
 async function renderMermaidBlocks() {
+	var seq = ++mermaidSeq;
 	var blocks = content.querySelectorAll('pre.kc-mermaid');
-	if (!blocks.length || !window.mermaid) {
+	if (!blocks.length) {
 		mermaidLastSvg = [];
 		return;
+	}
+	if (!window.mermaid) {
+		try {
+			await loadMermaid();
+		} catch (err) {
+			if (seq === mermaidSeq) {
+				var message = '<div class="kc-mermaid-error">' + escapeHtml(err.message) + '</div>';
+				for (var k = 0; k < blocks.length; k++) {
+					blocks[k].innerHTML = message;
+				}
+			}
+			return;
+		}
+		if (seq !== mermaidSeq) {
+			return;
+		}
 	}
 	var theme = isDarkBackground() ? 'dark' : 'default';
 	if (theme !== mermaidTheme) {
 		mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', suppressErrorRendering: true, theme: theme });
 		mermaidTheme = theme;
 	}
-	var seq = ++mermaidSeq;
 	mermaidLastSvg.length = blocks.length;
 
 	var pending = [];
