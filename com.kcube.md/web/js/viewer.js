@@ -121,6 +121,21 @@ function applyFont(family, sizePx) {
 }
 
 /**
+ * Eclipse 에디터 배경에 맞춰 밝은/어두운 테마를 적용한다. mermaid 는 다음 렌더링 때 배경색을 보고 테마를 고른다.
+ * @param {boolean} dark 어두운 테마면 true
+ * @param {string} background 다크 테마 배경색 (CSS 색, 없으면 빈 문자열)
+ */
+function applyTheme(dark, background) {
+	var root = document.documentElement;
+	root.classList.toggle('kc-dark', !!dark);
+	if (dark && background) {
+		root.style.setProperty('--kc-bg', background);
+	} else {
+		root.style.removeProperty('--kc-bg');
+	}
+}
+
+/**
  * Java(Eclipse)에서 호출하는 렌더링 진입점. 본문만 교체하므로 스크롤 위치가 유지된다.
  * @param {string} markdown 원본 Markdown 텍스트
  * @param {string} baseUri md 파일이 있는 폴더 URI (상대 경로 이미지 보정용, 없으면 빈 문자열)

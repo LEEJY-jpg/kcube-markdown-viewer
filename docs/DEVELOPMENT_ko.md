@@ -78,13 +78,20 @@
   - `file:` → Eclipse 에디터 (워크스페이스 안이면 `IFile`, 밖이면 파일 스토어). `#L10` / `#L10-L20` / `#10` 은 텍스트 에디터에서 해당 줄을 선택한다.
   - 파일이 없으면 안내 대화상자를 띄운다.
 
-### 3.7 향후 검토 항목
+### 3.7 Preview 테마
+- Source 탭(텍스트 에디터) 배경색을 따라 밝은/어두운 테마를 자동으로 고른다. 배경 밝기가 128 미만이면 다크 테마.
+  - 배경색: `EditorsUI` 설정의 `AbstractTextEditor.Color.Background` (Eclipse 다크 테마가 바꾸는 값). "시스템 기본색" 이면 `SWT.COLOR_LIST_BACKGROUND`.
+  - 설정이 바뀌면 (테마 전환 포함) 즉시 다시 적용한다.
+- 다크 테마는 `applyTheme(true, 배경색)` 이 `<html>` 에 `kc-dark` 클래스를 붙이고, 본문 배경을 에디터 배경색에 맞춘다. 스타일은 `viewer.css` 의 `html.kc-dark` 규칙 (코드 하이라이트 색 포함).
+- mermaid 는 본문 배경 밝기로 `dark`/`default` 테마를 고르므로 테마가 바뀌면 다시 렌더링한다.
+
+### 3.8 향후 검토 항목
 - [ ] Source 탭 Markdown 문법 하이라이팅 (제목, 굵게, 코드블록 등)
 - [ ] Source | Preview 좌우 분할 탭
 - [ ] 에디터 ↔ 미리보기 스크롤 동기화
 - [x] 코드 하이라이팅 (highlight.js) — 완료
 - [x] Preview 검색 — 완료 (3.4)
-- [ ] 다크 테마 (`prefers-color-scheme`)
+- [x] 다크 테마 — 완료 (3.7, Eclipse 에디터 배경색 기준)
 - [x] 미리보기 링크 클릭 시 이클립스에서 파일 열기 — 완료 (3.6)
 
 ## 4. 아키텍처
@@ -140,7 +147,7 @@ kcube-markdown-viewer/
 - `org.eclipse.ui.views` — Markdown 카테고리 및 Preview 뷰 등록
 
 ### 4.4 Java ↔ JS 연동 규칙
-- JS 진입점 (Java 에서 `browser.execute` 로 호출): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `openSearch()`
+- JS 진입점 (Java 에서 `browser.execute` 로 호출): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `applyTheme(dark, background)`, `openSearch()`
 - 뷰어 페이지 로드: `FrameworkUtil.getBundle(...).getEntry("web/viewer.html")` → `FileLocator.toFileURL()` → `browser.setUrl()`
 - 문자열 전달은 반드시 `JsUtils.toJsString()` 사용
   - `"`, `\`, `\n`, `\r`, `\u2028`, `\u2029` 이스케이프

@@ -3,6 +3,10 @@ body {
 	margin: 0;
 	background: #fff;
 }
+html.kc-dark,
+html.kc-dark body {
+	background: var(--kc-bg, #1e1f22);
+}
 .MarkDownViewer img {
 	max-width: 100%;
 }
@@ -75,4 +79,158 @@ mark.kc-hit {
 }
 mark.kc-hit-active {
 	background: #ff9632;
+}
+
+/* 다크 테마: applyTheme(true, ...) 가 <html> 에 kc-dark 클래스를 붙인다 */
+html.kc-dark body,
+html.kc-dark .MarkDownViewer {
+	color: #d4d4d4;
+}
+html.kc-dark a {
+	color: #6cb6ff;
+}
+html.kc-dark a:hover,
+html.kc-dark a:focus {
+	color: #9ccfff;
+}
+html.kc-dark h1, html.kc-dark h2, html.kc-dark h3,
+html.kc-dark h4, html.kc-dark h5, html.kc-dark h6 {
+	color: #e6e6e6;
+}
+html.kc-dark hr {
+	border-top-color: #444;
+}
+html.kc-dark blockquote {
+	border-left-color: #444;
+	color: #a8a8a8;
+}
+html.kc-dark .MarkDownViewer pre {
+	background-color: #2b2d30;
+	border-color: #3c3f41;
+	color: #d4d4d4;
+}
+html.kc-dark .MarkDownViewer pre.kc-mermaid {
+	background: transparent;
+}
+html.kc-dark .MarkDownViewer .code-header {
+	background-color: #323538;
+	border-bottom-color: #444;
+}
+html.kc-dark .MarkDownViewer .code-header .code-language-label {
+	background-color: #44474a;
+	color: #c8c8c8;
+}
+html.kc-dark .MarkDownViewer .code-header .copy-btn {
+	background-color: #55595d;
+}
+html.kc-dark .MarkDownViewer code {
+	color: #ff9492;
+	background-color: #343942;
+}
+html.kc-dark .MarkDownViewer pre code {
+	color: inherit;
+	background-color: transparent;
+}
+html.kc-dark .MarkDownViewer .inline-code:hover {
+	background-color: #454b55;
+}
+html.kc-dark .MarkDownViewer table,
+html.kc-dark .MarkDownViewer th,
+html.kc-dark .MarkDownViewer td {
+	border-color: #444;
+}
+html.kc-dark .MarkDownViewer th {
+	background-color: #2b2d30;
+}
+html.kc-dark .MarkDownViewer .kc-mermaid-error {
+	color: #ff7b72;
+}
+html.kc-dark #search-bar {
+	background: #2b2d30;
+	border-color: #555;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+html.kc-dark #search-input {
+	background: #1e1f22;
+	color: #d4d4d4;
+	border: 1px solid #555;
+}
+html.kc-dark #search-count {
+	color: #aaa;
+}
+html.kc-dark #search-bar button {
+	background: #3c3f41;
+	color: #d4d4d4;
+	border: 1px solid #555;
+}
+html.kc-dark mark.kc-hit {
+	background: #6b5b1e;
+}
+html.kc-dark mark.kc-hit-active {
+	background: #b5651d;
+}
+
+/* 다크 테마 코드 하이라이트 (highlight.js default 테마 덮어쓰기) */
+html.kc-dark .hljs {
+	background: transparent;
+	color: #c9d1d9;
+}
+html.kc-dark .hljs-comment,
+html.kc-dark .hljs-quote {
+	color: #8b949e;
+}
+html.kc-dark .hljs-keyword,
+html.kc-dark .hljs-selector-tag,
+html.kc-dark .hljs-meta .hljs-keyword,
+html.kc-dark .hljs-doctag {
+	color: #ff7b72;
+}
+html.kc-dark .hljs-string,
+html.kc-dark .hljs-meta .hljs-string,
+html.kc-dark .hljs-regexp {
+	color: #a5d6ff;
+}
+html.kc-dark .hljs-number,
+html.kc-dark .hljs-literal,
+html.kc-dark .hljs-attr,
+html.kc-dark .hljs-attribute,
+html.kc-dark .hljs-variable,
+html.kc-dark .hljs-template-variable,
+html.kc-dark .hljs-meta,
+html.kc-dark .hljs-operator,
+html.kc-dark .hljs-selector-attr,
+html.kc-dark .hljs-selector-class,
+html.kc-dark .hljs-selector-id {
+	color: #79c0ff;
+}
+html.kc-dark .hljs-title,
+html.kc-dark .hljs-section,
+html.kc-dark .hljs-name {
+	color: #d2a8ff;
+}
+html.kc-dark .hljs-built_in,
+html.kc-dark .hljs-type,
+html.kc-dark .hljs-symbol,
+html.kc-dark .hljs-selector-pseudo,
+html.kc-dark .hljs-template-tag {
+	color: #ffa657;
+}
+html.kc-dark .hljs-tag,
+html.kc-dark .hljs-punctuation,
+html.kc-dark .hljs-tag .hljs-attr,
+html.kc-dark .hljs-tag .hljs-name {
+	color: #7ee787;
+}
+html.kc-dark .hljs-bullet,
+html.kc-dark .hljs-link,
+html.kc-dark .hljs-code {
+	color: #f2cc60;
+}
+html.kc-dark .hljs-addition {
+	color: #aff5b4;
+	background-color: #033a16;
+}
+html.kc-dark .hljs-deletion {
+	color: #ffdcd7;
+	background-color: #67060c;
 }

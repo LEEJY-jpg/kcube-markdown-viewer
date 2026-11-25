@@ -5,6 +5,8 @@ import java.util.Enumeration;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.URIUtil;
+import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.preference.PreferenceConverter;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.swt.SWT;
@@ -15,8 +17,11 @@ import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.browser.ProgressAdapter;
 import org.eclipse.swt.browser.ProgressEvent;
 import org.eclipse.swt.graphics.FontData;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.ui.editors.text.EditorsUI;
+import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
@@ -55,11 +60,14 @@ public class MarkdownBrowser {
 	/** 마지막으로 브라우저에 전달한 이미지 기준 경로 (전달한 적 없으면 null) */
 	private String _appliedBaseUri;
 
-	/** 마지막으로 적용한 글꼴 스크립트 (적용한 적 없으면 null) */
-	private String _appliedFontScript;
+	/** 마지막으로 적용한 글꼴·테마 스크립트 (적용한 적 없으면 null) */
+	private String _appliedStyleScript;
 
 	/** Eclipse 텍스트 글꼴이 바뀌면 미리보기 글꼴도 다시 적용하는 리스너 */
 	private final IPropertyChangeListener _fontListener = event -> onPropertyChange(event.getProperty());
+
+	/** 에디터 배경색 설정(테마 전환 포함)이 바뀌면 미리보기 테마를 다시 적용하는 리스너 */
+	private final IPropertyChangeListener _themeListener = event -> onEditorPreferenceChange(event.getProperty());
 
 	/**
 	 * 브라우저를 만들고 뷰어 페이지 로딩을 시작한다.
@@ -76,7 +84,7 @@ public class MarkdownBrowser {
 					// 페이지가 (다시) 로드되면 본문이 비어 있으므로 전달 이력을 버린다
 					_appliedMarkdown = null;
 					_appliedBaseUri = null;
-					_appliedFontScript = null;
+					_appliedStyleScript = null;
 					_ready = true;
 					apply();
 				}
@@ -95,7 +103,11 @@ public class MarkdownBrowser {
 		});
 		createLinkFunction();
 		JFaceResources.getFontRegistry().addListener(_fontListener);
-		_browser.addDisposeListener(e -> JFaceResources.getFontRegistry().removeListener(_fontListener));
+		EditorsUI.getPreferenceStore().addPropertyChangeListener(_themeListener);
+		_browser.addDisposeListener(e -> {
+			JFaceResources.getFontRegistry().removeListener(_fontListener);
+			EditorsUI.getPreferenceStore().removePropertyChangeListener(_themeListener);
+		});
 		loadViewer();
 	}
 
@@ -148,17 +160,18 @@ public class MarkdownBrowser {
 	/**
 	 * 보관 중인 Markdown 을 JS 의 renderMarkdown() 으로 전달한다.
 	 * <p>
-	 * 내용·기준 경로·글꼴이 마지막 전달과 같으면 브라우저 호출을 생략한다.
+	 * 내용·기준 경로·글꼴·테마가 마지막 전달과 같으면 브라우저 호출을 생략한다.
+	 * 테마가 바뀌어도 다시 렌더링하는 것은 mermaid 다이어그램을 새 테마로 그리기 위해서다.
 	 */
 	private void apply() {
 		if (!_ready || _browser.isDisposed()) {
 			return;
 		}
-		String font = fontScript();
-		if (_markdown.equals(_appliedMarkdown) && _baseUri.equals(_appliedBaseUri) && font.equals(_appliedFontScript)) {
+		String style = fontScript() + themeScript();
+		if (_markdown.equals(_appliedMarkdown) && _baseUri.equals(_appliedBaseUri) && style.equals(_appliedStyleScript)) {
 			return;
 		}
-		String script = font + "renderMarkdown(" + JsUtils.toJsString(_markdown) + "," + JsUtils.toJsString(_baseUri) + ");";
+		String script = style + "renderMarkdown(" + JsUtils.toJsString(_markdown) + "," + JsUtils.toJsString(_baseUri) + ");";
 		if (!_browser.execute(script)) {
 			if (_log.isWarnEnabled()) {
 				_log.warn("Failed to execute renderMarkdown script");
@@ -167,7 +180,7 @@ public class MarkdownBrowser {
 		}
 		_appliedMarkdown = _markdown;
 		_appliedBaseUri = _baseUri;
-		_appliedFontScript = font;
+		_appliedStyleScript = style;
 	}
 
 	/**
@@ -179,6 +192,45 @@ public class MarkdownBrowser {
 		if (JFaceResources.TEXT_FONT.equals(property) && !_browser.isDisposed()) {
 			_browser.getDisplay().asyncExec(this::apply);
 		}
+	}
+
+	/**
+	 * 에디터 배경색 관련 설정 변경을 처리한다. Eclipse 테마를 바꾸면 이 설정이 바뀐다.
+	 *
+	 * @param property 변경된 설정 키
+	 */
+	private void onEditorPreferenceChange(String property) {
+		if ((AbstractTextEditor.PREFERENCE_COLOR_BACKGROUND.equals(property)
+				|| AbstractTextEditor.PREFERENCE_COLOR_BACKGROUND_SYSTEM_DEFAULT.equals(property)) && !_browser.isDisposed()) {
+			_browser.getDisplay().asyncExec(this::apply);
+		}
+	}
+
+	/**
+	 * Source 탭(텍스트 에디터) 배경이 어두우면 다크 테마를, 아니면 밝은 테마를 적용하는 JS 호출문을 만든다.
+	 *
+	 * @return applyTheme(...) 호출문
+	 */
+	private String themeScript() {
+		RGB bg = editorBackground();
+		boolean dark = (0.299 * bg.red + 0.587 * bg.green + 0.114 * bg.blue) < 128;
+		String color = dark ? String.format("#%02x%02x%02x", bg.red, bg.green, bg.blue) : "";
+		return "applyTheme(" + dark + "," + JsUtils.toJsString(color) + ");";
+	}
+
+	/**
+	 * Eclipse 텍스트 에디터의 배경색을 구한다. 다크 테마는 이 설정을 어두운 색으로 바꾼다.
+	 * 시스템 기본색을 쓰도록 설정돼 있으면 OS 목록 배경색(macOS 다크 모드 반영)을 쓴다.
+	 *
+	 * @return 에디터 배경색
+	 */
+	private RGB editorBackground() {
+		IPreferenceStore store = EditorsUI.getPreferenceStore();
+		if (!store.getBoolean(AbstractTextEditor.PREFERENCE_COLOR_BACKGROUND_SYSTEM_DEFAULT)
+				&& !store.getString(AbstractTextEditor.PREFERENCE_COLOR_BACKGROUND).isEmpty()) {
+			return PreferenceConverter.getColor(store, AbstractTextEditor.PREFERENCE_COLOR_BACKGROUND);
+		}
+		return _browser.getDisplay().getSystemColor(SWT.COLOR_LIST_BACKGROUND).getRGB();
 	}
 
 	/**

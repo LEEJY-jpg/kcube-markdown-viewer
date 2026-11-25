@@ -78,13 +78,20 @@
   - `file:` → Eclipse editor (workspace `IFile` when the file is in the workspace, otherwise the file store). `#L10` / `#L10-L20` / `#10` selects that line in text editors.
   - A missing file shows an information dialog.
 
-### 3.7 Items to consider later
+### 3.7 Preview theme
+- The Preview picks a light or dark theme from the Source tab (text editor) background: luminance below 128 means dark.
+  - Background: `AbstractTextEditor.Color.Background` in the `EditorsUI` preference store (the value Eclipse's dark theme changes), or `SWT.COLOR_LIST_BACKGROUND` when "system default" is selected.
+  - Preference changes (including theme switches) are applied immediately.
+- In dark mode `applyTheme(true, background)` adds the `kc-dark` class to `<html>` and matches the page background to the editor. Styles are the `html.kc-dark` rules in `viewer.css` (code highlight colors included).
+- mermaid chooses its `dark`/`default` theme from the page background, so diagrams are re-rendered when the theme changes.
+
+### 3.8 Items to consider later
 - [ ] Markdown syntax highlighting in the Source tab (headings, bold, code blocks, etc.)
 - [ ] Side-by-side Source | Preview tab
 - [ ] Scroll synchronization between editor and preview
 - [x] Code highlighting (highlight.js) — done
 - [x] Search in the Preview — done (3.4)
-- [ ] Dark theme (`prefers-color-scheme`)
+- [x] Dark theme — done (3.7, based on the Eclipse editor background)
 - [x] Open files in Eclipse when a preview link is clicked — done (3.6)
 
 ## 4. Architecture
@@ -140,7 +147,7 @@ kcube-markdown-viewer/
 - `org.eclipse.ui.views` — registers the Markdown category and the Preview view
 
 ### 4.4 Java ↔ JS integration rules
-- JS entry points (called from Java with `browser.execute`): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `openSearch()`
+- JS entry points (called from Java with `browser.execute`): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `applyTheme(dark, background)`, `openSearch()`
 - Loading the viewer page: `FrameworkUtil.getBundle(...).getEntry("web/viewer.html")` → `FileLocator.toFileURL()` → `browser.setUrl()`
 - Always use `JsUtils.toJsString()` to pass strings
   - Escape `"`, `\`, `\n`, `\r`, ` `, ` `
