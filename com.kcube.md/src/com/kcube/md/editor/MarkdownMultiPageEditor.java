@@ -28,6 +28,7 @@ import com.kcube.md.outline.MarkdownHeading;
 import com.kcube.md.outline.MarkdownOutlinePage;
 import com.kcube.md.preview.MarkdownBrowser;
 import com.kcube.md.util.EditorInputs;
+import com.kcube.md.util.SourceScroll;
 
 /**
  * Source / Preview 두 탭으로 구성된 Markdown 에디터.
@@ -50,6 +51,9 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 
 	/** Preview 탭 페이지 인덱스 */
 	private int _previewIndex = -1;
+
+	/** 직전에 보이던 페이지 인덱스 (탭 전환 시 스크롤 위치를 넘겨주기 위해 기억한다, 처음엔 -1) */
+	private int _activePageIndex = -1;
 
 	/** Outline 뷰에 보여 줄 헤딩 트리 페이지 (Outline 이 처음 요청할 때 만든다) */
 	private MarkdownOutlinePage _outlinePage;
@@ -120,15 +124,29 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 	}
 
 	/**
-	 * Preview 탭으로 전환될 때 최신 내용으로 다시 렌더링한다.
+	 * 탭을 바꿀 때 보던 위치를 이어 준다. Preview 로 가면 최신 내용으로 렌더링하고 Source 맨 위 줄로 스크롤하며,
+	 * Source 로 가면 Preview 맨 위에 보이던 줄을 Source 맨 위로 올린다.
 	 *
 	 * @param newPageIndex 전환된 페이지 인덱스
 	 */
 	@Override
 	protected void pageChange(int newPageIndex) {
+		int oldPageIndex = _activePageIndex;
+		_activePageIndex = newPageIndex;
+		double line = -1;
+		if (oldPageIndex == PAGE_SOURCE && newPageIndex == _previewIndex) {
+			line = SourceScroll.topLine(_textEditor);
+		} else if (oldPageIndex == _previewIndex && newPageIndex == PAGE_SOURCE && _preview != null) {
+			line = _preview.getTopLine();
+		}
 		super.pageChange(newPageIndex);
 		if (newPageIndex == _previewIndex) {
 			refreshPreview();
+			if (_preview != null) {
+				_preview.scrollToLine(line);
+			}
+		} else if (newPageIndex == PAGE_SOURCE) {
+			SourceScroll.setTopLine(_textEditor, line);
 		}
 	}
 

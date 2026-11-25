@@ -11,6 +11,9 @@ var content = document.getElementById('content');
 /** 현재 문서의 폴더 URI (상대 경로 링크·이미지 보정용, 없으면 빈 문자열) */
 var currentBaseUri = '';
 
+/** 현재 문서의 원본 줄 수 (스크롤 동기화에서 문서 끝 위치로 쓴다) */
+var sourceLineCount = 1;
+
 /**
  * 문자열을 HTML 로 이스케이프한다.
  * @param {string} str 원본 문자열
@@ -84,7 +87,8 @@ md.renderer.rules.html_block = function(tokens, idx) {
 	if (ALLOWED_HTML.test(html)) {
 		return html.match(/<br\s*\/?>/gi).map(function() { return '<br>'; }).join('') + '\n';
 	}
-	return '<p>' + escapeHtml(html.replace(/\n+$/, '')) + '</p>\n';
+	var map = tokens[idx].map;
+	return '<p' + (map ? ' data-line="' + map[0] + '"' : '') + '>' + escapeHtml(html.replace(/\n+$/, '')) + '</p>\n';
 };
 
 /**
@@ -97,22 +101,43 @@ md.renderer.rules.code_inline = function(tokens, idx) {
 	return '<code class="inline-code" onclick="copyInlineCode(this)">' + escapeHtml(tokens[idx].content) + '</code>';
 };
 
-/**
- * 헤딩에 원본 줄 번호(0 부터)를 data-line 속성으로 남긴다. Outline 에서 헤딩을 고르면 이 줄로 스크롤한다.
- * @param {Array} tokens 토큰 목록
- * @param {number} idx 현재 토큰 인덱스
- * @param {Object} options markdown-it 옵션
- * @param {Object} env 렌더링 환경
- * @param {Object} self 렌더러
- * @returns {string} 출력 HTML
- */
-md.renderer.rules.heading_open = function(tokens, idx, options, env, self) {
-	var token = tokens[idx];
-	if (token.map) {
-		token.attrSet('data-line', String(token.map[0]));
-	}
-	return self.renderToken(tokens, idx, options);
+/** 원본 줄 번호(data-line)를 남기는 블록 토큰 종류 */
+var LINE_TOKENS = {
+	heading_open: true, paragraph_open: true, blockquote_open: true, bullet_list_open: true,
+	ordered_list_open: true, list_item_open: true, table_open: true, tr_open: true, hr: true
 };
+
+/**
+ * 블록 토큰에 원본 줄 번호(0 부터)를 data-line 속성으로 남긴다. Outline 이동과 Source ↔ Preview
+ * 스크롤 동기화가 이 값으로 위치를 찾는다.
+ * @param {Object} state markdown-it core 상태
+ */
+md.core.ruler.push('kc_source_line', function(state) {
+	for (var i = 0; i < state.tokens.length; i++) {
+		var token = state.tokens[i];
+		if (token.map && LINE_TOKENS[token.type]) {
+			token.attrSet('data-line', String(token.map[0]));
+		}
+	}
+});
+
+['fence', 'code_block'].forEach(function(name) {
+	var render = md.renderer.rules[name];
+	/**
+	 * 코드 블록 바깥 &lt;pre&gt; 에 원본 줄 번호를 붙인다 (highlight 결과는 토큰 속성을 쓰지 않으므로 직접 넣는다).
+	 * @param {Array} tokens 토큰 목록
+	 * @param {number} idx 현재 토큰 인덱스
+	 * @param {Object} options markdown-it 옵션
+	 * @param {Object} env 렌더링 환경
+	 * @param {Object} self 렌더러
+	 * @returns {string} 출력 HTML
+	 */
+	md.renderer.rules[name] = function(tokens, idx, options, env, self) {
+		var html = render(tokens, idx, options, env, self);
+		var map = tokens[idx].map;
+		return map && !/^<pre[^>]*data-line=/.test(html) ? html.replace(/^<pre/, '<pre data-line="' + map[0] + '"') : html;
+	};
+});
 
 /**
  * Eclipse 텍스트 에디터(Source 탭)와 동일한 글꼴을 본문 전체에 적용한다.
@@ -161,6 +186,7 @@ function renderMarkdown(markdown, baseUri) {
 	var scrollX = window.pageXOffset;
 	var scrollY = window.pageYOffset;
 	currentBaseUri = baseUri || '';
+	sourceLineCount = (markdown || '').split('\n').length;
 	content.innerHTML = md.render(markdown || '');
 	resolveImages(baseUri);
 	window.scrollTo(scrollX, scrollY);
@@ -332,23 +358,62 @@ function slugify(text) {
 }
 
 /**
- * 원본 줄 번호의 헤딩으로 스크롤한다. 정확히 맞는 헤딩이 없으면 그 앞의 가장 가까운 헤딩으로 간다.
- * @param {number} line 원본 줄 번호 (0 부터)
+ * data-line 이 붙은 블록의 (원본 줄, 문서 기준 y) 목록을 만든다. 줄과 y 가 모두 증가하는 항목만 남기고,
+ * 맨 앞(0줄, y 0)과 맨 끝(마지막 줄, 문서 높이)을 넣어 보간 구간을 닫는다.
+ * @returns {Array<{line: number, top: number}>} 줄 순서의 위치 목록
+ */
+function lineAnchors() {
+	var anchors = [{ line: 0, top: 0 }];
+	var elements = content.querySelectorAll('[data-line]');
+	for (var i = 0; i < elements.length; i++) {
+		var element = elements[i];
+		if (!element.getClientRects().length) {
+			continue; // 숨겨진 블록 (접힌 코드 등)
+		}
+		var line = Number(element.getAttribute('data-line'));
+		var top = element.getBoundingClientRect().top + window.pageYOffset;
+		var last = anchors[anchors.length - 1];
+		if (line > last.line && top >= last.top) {
+			anchors.push({ line: line, top: top });
+		}
+	}
+	var end = Math.max(sourceLineCount, anchors[anchors.length - 1].line + 1);
+	anchors.push({ line: end, top: Math.max(document.documentElement.scrollHeight, anchors[anchors.length - 1].top) });
+	return anchors;
+}
+
+/**
+ * 원본 줄 번호 위치로 스크롤한다. 블록 사이는 줄 비율로 보간하므로 소수 줄도 받는다.
+ * 헤딩 줄을 주면 헤딩이 화면 맨 위에 온다.
+ * @param {number} line 원본 줄 번호 (0 부터, 소수 허용)
  */
 function scrollToLine(line) {
-	var headings = content.querySelectorAll('[data-line]');
-	var target = null;
-	for (var i = 0; i < headings.length; i++) {
-		if (Number(headings[i].getAttribute('data-line')) > line) {
-			break;
-		}
-		target = headings[i];
+	var anchors = lineAnchors();
+	var i = 0;
+	while (i < anchors.length - 2 && anchors[i + 1].line <= line) {
+		i++;
 	}
-	if (target) {
-		target.scrollIntoView();
-	} else {
-		window.scrollTo(0, 0);
+	var a = anchors[i];
+	var b = anchors[i + 1];
+	var ratio = Math.min(Math.max((line - a.line) / (b.line - a.line), 0), 1);
+	window.scrollTo(window.pageXOffset, a.top + (b.top - a.top) * ratio);
+}
+
+/**
+ * 화면 맨 위에 보이는 위치를 원본 줄 번호로 환산한다. scrollToLine 의 역함수다.
+ * @returns {number} 원본 줄 번호 (0 부터, 소수 포함)
+ */
+function getTopLine() {
+	var y = window.pageYOffset;
+	var anchors = lineAnchors();
+	var i = 0;
+	while (i < anchors.length - 2 && anchors[i + 1].top <= y) {
+		i++;
 	}
+	var a = anchors[i];
+	var b = anchors[i + 1];
+	var ratio = b.top > a.top ? Math.min(Math.max((y - a.top) / (b.top - a.top), 0), 1) : 0;
+	return a.line + (b.line - a.line) * ratio;
 }
 
 /**

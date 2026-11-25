@@ -89,14 +89,21 @@
 - The editor provides `MarkdownOutlinePage` through the `IContentOutlinePage` adapter, so the Outline view shows the heading tree.
 - Headings are found in Java by `HeadingParser` (ATX `#`, Setext `===`/`---`, skipping fenced code blocks) and refreshed 500 ms after the document changes.
 - Selecting a heading selects its line in the Source tab, or scrolls the Preview tab to it.
-  - In the Preview, the markdown-it `heading_open` rule tags headings with their source line (`data-line`, 0-based) and `scrollToLine(line)` scrolls there.
+  - In the Preview, block elements carry their source line (`data-line`, 0-based, see 3.9) and `scrollToLine(line)` scrolls there.
   - `HeadingParser` line numbers must use the same basis as markdown-it token `map[0]`.
 
-### 3.9 Items to consider later
+### 3.9 Scroll synchronization (Source ↔ Preview)
+- A markdown-it core rule tags block elements (headings, paragraphs, lists/items, blockquotes, tables/rows, hr) with `data-line` = token `map[0]`; `fence`/`code_block` and the raw-HTML paragraph add it to their outer tag directly.
+- `scrollToLine(line)` and `getTopLine()` map between source lines and the page's scroll position by interpolating between consecutive `data-line` blocks (fractional lines allowed), so they are inverses of each other.
+- Switching editor tabs carries the position: Source → Preview scrolls to the Source's top visible line, Preview → Source puts the Preview's top line at the top of the Source (`MarkdownMultiPageEditor.pageChange`, `SourceScroll`).
+- The *Markdown Preview* view follows the tracked editor's Source scrolling (`IViewportListener`, 30 ms coalescing) and re-syncs after each re-render. Preview scrolling does not move the Source.
+- Images and mermaid diagrams that finish loading after the scroll can still shift the position slightly.
+
+### 3.10 Items to consider later
 - [ ] Markdown syntax highlighting in the Source tab (headings, bold, code blocks, etc.)
 - [ ] Side-by-side Source | Preview tab
 - [x] Table of contents (Outline view) — done (3.8)
-- [ ] Scroll synchronization between editor and preview
+- [x] Scroll synchronization between editor and preview — done (3.9)
 - [x] Code highlighting (highlight.js) — done
 - [x] Search in the Preview — done (3.4)
 - [x] Dark theme — done (3.7, based on the Eclipse editor background)
@@ -135,7 +142,8 @@ kcube-markdown-viewer/
 │       │   └── MarkdownBrowser.java            # wrapper that loads the JS viewer and calls rendering
 │       └── util/
 │           ├── JsUtils.java                    # Java string → JS literal conversion
-│           └── EditorInputs.java               # md detection, image base path
+│           ├── EditorInputs.java               # md detection, image base path
+│           └── SourceScroll.java               # Source top line read/write (scroll sync)
 ├── com.kcube.md.feature/                   # installation unit (Feature)
 │   ├── feature.xml
 │   ├── build.properties
@@ -159,7 +167,7 @@ kcube-markdown-viewer/
 - `org.eclipse.ui.views` — registers the Markdown category and the Preview view
 
 ### 4.4 Java ↔ JS integration rules
-- JS entry points (called from Java with `browser.execute`): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `applyTheme(dark, background)`, `openSearch()`, `scrollToLine(line)`
+- JS entry points (called from Java with `browser.execute`): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `applyTheme(dark, background)`, `openSearch()`, `scrollToLine(line)`; `getTopLine()` is read with `browser.evaluate`
 - Loading the viewer page: `FrameworkUtil.getBundle(...).getEntry("web/viewer.html")` → `FileLocator.toFileURL()` → `browser.setUrl()`
 - Always use `JsUtils.toJsString()` to pass strings
   - Escape `"`, `\`, `\n`, `\r`, ` `, ` `

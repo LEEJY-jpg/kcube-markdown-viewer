@@ -89,14 +89,21 @@
 - 에디터가 `IContentOutlinePage` 어댑터로 `MarkdownOutlinePage` 를 제공해 Outline 뷰에 헤딩 트리를 보여 준다.
 - 헤딩은 Java `HeadingParser` 가 찾는다 (ATX `#`, Setext `===`/`---`, 펜스 코드 블록 안은 제외). 문서가 바뀌면 500ms 뒤 갱신한다.
 - 헤딩을 고르면 Source 탭에서는 그 줄을 선택하고, Preview 탭에서는 그 헤딩으로 스크롤한다.
-  - Preview 는 markdown-it `heading_open` 규칙이 헤딩에 원본 줄 번호(`data-line`, 0 부터)를 붙이고, `scrollToLine(line)` 이 그 줄로 스크롤한다.
+  - Preview 는 블록 요소에 붙은 원본 줄 번호(`data-line`, 0 부터, 3.9 참고)를 보고 `scrollToLine(line)` 이 그 줄로 스크롤한다.
   - `HeadingParser` 의 줄 번호는 markdown-it 토큰 `map[0]` 과 같은 기준이어야 한다.
 
-### 3.9 향후 검토 항목
+### 3.9 스크롤 동기화 (Source ↔ Preview)
+- markdown-it core 규칙이 블록 요소(헤딩, 문단, 목록/항목, 인용, 표/행, 구분선)에 `data-line` = 토큰 `map[0]` 을 붙인다. `fence`/`code_block` 과 원시 HTML 문단은 바깥 태그에 직접 넣는다.
+- `scrollToLine(line)` 과 `getTopLine()` 은 이웃한 `data-line` 블록 사이를 보간해 원본 줄과 스크롤 위치를 서로 바꾼다 (소수 줄 허용, 서로 역함수).
+- 에디터 탭을 바꾸면 위치를 이어 준다. Source → Preview 는 Source 맨 위 줄로 스크롤하고, Preview → Source 는 Preview 맨 위 줄을 Source 맨 위로 올린다 (`MarkdownMultiPageEditor.pageChange`, `SourceScroll`).
+- *Markdown Preview* 뷰는 추적 중인 에디터의 Source 스크롤을 따라간다 (`IViewportListener`, 30ms 로 묶음). 다시 렌더링한 뒤에도 맞춘다. Preview 를 스크롤해도 Source 는 움직이지 않는다.
+- 스크롤 뒤에 로딩이 끝나는 이미지·mermaid 다이어그램 때문에 위치가 조금 밀릴 수 있다.
+
+### 3.10 향후 검토 항목
 - [ ] Source 탭 Markdown 문법 하이라이팅 (제목, 굵게, 코드블록 등)
 - [ ] Source | Preview 좌우 분할 탭
 - [x] 목차 (Outline 뷰 연동) — 완료 (3.8)
-- [ ] 에디터 ↔ 미리보기 스크롤 동기화
+- [x] 에디터 ↔ 미리보기 스크롤 동기화 — 완료 (3.9)
 - [x] 코드 하이라이팅 (highlight.js) — 완료
 - [x] Preview 검색 — 완료 (3.4)
 - [x] 다크 테마 — 완료 (3.7, Eclipse 에디터 배경색 기준)
@@ -135,7 +142,8 @@ kcube-markdown-viewer/
 │       │   └── MarkdownBrowser.java            # JS 뷰어 로드 + 렌더링 호출 래퍼
 │       └── util/
 │           ├── JsUtils.java                    # Java 문자열 → JS 리터럴 변환
-│           └── EditorInputs.java               # md 판별, 이미지 기준 경로
+│           ├── EditorInputs.java               # md 판별, 이미지 기준 경로
+│           └── SourceScroll.java               # Source 맨 위 줄 읽기/쓰기 (스크롤 동기화)
 ├── com.kcube.md.feature/                   # 설치 단위 (Feature)
 │   ├── feature.xml
 │   ├── build.properties
@@ -159,7 +167,7 @@ kcube-markdown-viewer/
 - `org.eclipse.ui.views` — Markdown 카테고리 및 Preview 뷰 등록
 
 ### 4.4 Java ↔ JS 연동 규칙
-- JS 진입점 (Java 에서 `browser.execute` 로 호출): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `applyTheme(dark, background)`, `openSearch()`, `scrollToLine(line)`
+- JS 진입점 (Java 에서 `browser.execute` 로 호출): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `applyTheme(dark, background)`, `openSearch()`, `scrollToLine(line)`. `getTopLine()` 은 `browser.evaluate` 로 읽는다
 - 뷰어 페이지 로드: `FrameworkUtil.getBundle(...).getEntry("web/viewer.html")` → `FileLocator.toFileURL()` → `browser.setUrl()`
 - 문자열 전달은 반드시 `JsUtils.toJsString()` 사용
   - `"`, `\`, `\n`, `\r`, `\u2028`, `\u2029` 이스케이프

@@ -10,6 +10,7 @@ import org.eclipse.jface.preference.PreferenceConverter;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.BrowserFunction;
 import org.eclipse.swt.browser.LocationEvent;
@@ -63,6 +64,9 @@ public class MarkdownBrowser {
 	/** 마지막으로 적용한 글꼴·테마 스크립트 (적용한 적 없으면 null) */
 	private String _appliedStyleScript;
 
+	/** 로딩 완료 전에 요청된 스크롤 위치 (원본 줄 번호, 없으면 -1) */
+	private double _pendingLine = -1;
+
 	/** Eclipse 텍스트 글꼴이 바뀌면 미리보기 글꼴도 다시 적용하는 리스너 */
 	private final IPropertyChangeListener _fontListener = event -> onPropertyChange(event.getProperty());
 
@@ -87,6 +91,10 @@ public class MarkdownBrowser {
 					_appliedStyleScript = null;
 					_ready = true;
 					apply();
+					if (_pendingLine >= 0) {
+						scrollToLine(_pendingLine);
+						_pendingLine = -1;
+					}
 				}
 			}
 		});
@@ -158,17 +166,41 @@ public class MarkdownBrowser {
 	}
 
 	/**
-	 * 원본 줄 번호의 헤딩으로 미리보기를 스크롤한다. 페이지가 준비되지 않았으면 무시한다.
+	 * 원본 줄 번호 위치로 미리보기를 스크롤한다. 헤딩 줄이면 헤딩이 맨 위에 오고, 블록 사이는 비율로 보간한다.
+	 * 페이지가 준비되지 않았으면 준비된 뒤 스크롤한다.
 	 *
-	 * @param line 원본 줄 번호 (0 부터)
+	 * @param line 원본 줄 번호 (0 부터, 소수 허용, 음수면 무시)
 	 */
-	public void scrollToLine(int line) {
-		if (!_ready || _browser.isDisposed()) {
+	public void scrollToLine(double line) {
+		if (line < 0 || Double.isNaN(line) || _browser.isDisposed()) {
+			return;
+		}
+		if (!_ready) {
+			_pendingLine = line;
 			return;
 		}
 		apply();
 		if (!_browser.execute("scrollToLine(" + line + ");") && _log.isWarnEnabled()) {
 			_log.warn("Failed to execute scrollToLine script");
+		}
+	}
+
+	/**
+	 * 미리보기 맨 위에 보이는 위치를 원본 줄 번호로 구한다.
+	 *
+	 * @return 원본 줄 번호 (0 부터, 소수 포함). 페이지가 준비되지 않았거나 실패하면 -1
+	 */
+	public double getTopLine() {
+		if (!_ready || _browser.isDisposed()) {
+			return -1;
+		}
+		try {
+			return _browser.evaluate("return getTopLine();") instanceof Number n ? n.doubleValue() : -1;
+		} catch (SWTException e) {
+			if (_log.isWarnEnabled()) {
+				_log.warn("Failed to evaluate getTopLine script", e);
+			}
+			return -1;
 		}
 	}
 
