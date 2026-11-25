@@ -61,6 +61,11 @@
   - 작업 목록: `- [ ]` / `- [x]` → 읽기 전용 체크박스 (`li.task-list-item`, 목록에 `contains-task-list`).
   - 알림 상자: 인용 첫 줄이 `[!NOTE]`/`[!TIP]`/`[!IMPORTANT]`/`[!WARNING]`/`[!CAUTION]` 이면 그 줄을 지우고 제목을 넣은 `blockquote.markdown-alert-*`.
   - 각주: `[^이름]` 참조와 `[^이름]: 내용` 정의 (4칸 들여쓴 다음 줄까지). 정의는 문서 끝 `section.footnotes` 로 옮겨 참조 순서로 번호를 매기고, 참조되지 않은 정의는 버린다. `#fn-N` / `#fnref-N` 링크로 오간다.
+- 수식: `js/math.js` 플러그인이 GitHub 문법을 KaTeX 자리 표시 요소(`.kc-math`, TeX 원문은 `data-tex`)로 바꾸고, `renderMath()` 가 KaTeX 로 채운다.
+  - 인라인 `$…$` (여는 `$` 뒤·닫는 `$` 앞 공백 금지, 닫는 `$` 뒤 숫자 금지 → `$5 and $10` 은 수식 아님), `` $`…`$ ``, 문단 안 `$$…$$`.
+  - 블록 `$$` … `$$` (한 줄 `$$x$$` 포함, 닫는 줄이 없으면 수식 아님)와 ```` ```math ```` 코드 블록.
+  - `katex/katex.min.js`·`katex.min.css`·woff2 글꼴(약 590KB)은 수식이 처음 나올 때만 불러온다. 불러온 뒤에는 동기로 채워 스크롤 복원 전에 높이가 확정된다. 오류는 KaTeX 가 그 수식만 빨갛게 표시한다(`throwOnError: false`).
+  - `applyFont` 의 글꼴 강제 규칙은 `.katex` 안을 제외하고, 검색(`search.js`)도 수식 안은 건너뛴다.
 - 목록 글머리: `MarkDownViewer.css` 가 모든 `li` 를 `decimal` 로 만들어 `ul` 에도 번호가 붙던 것을 `viewer.css` 에서 `ul > li { list-style-type: inherit }` 로 바로잡았다.
 
 ### 3.4 Preview 검색
@@ -118,6 +123,7 @@
 
 ### 3.11 향후 검토 항목
 - [x] Source | Preview 좌우 분할 탭 — 완료 (3.1 Split 탭)
+- [x] 수식 (KaTeX) — 완료 (3.3)
 - [x] GFM 확장 (작업 목록, 알림 상자, 각주) — 완료 (3.3)
 - [x] Source 탭 Markdown 문법 하이라이팅 — 완료 (3.10)
 - [x] 목차 (Outline 뷰 연동) — 완료 (3.8)
@@ -146,7 +152,8 @@ kcube-markdown-viewer/
 │   ├── web/                                # 기존 JS 뷰어 (오프라인 동작)
 │   │   ├── viewer.html
 │   │   ├── css/                            # bootstrap, highlight 테마, MarkDownViewer.css, viewer.css
-│   │   └── js/                             # markdown-it, highlight.js, gfm.js, viewer.js, search.js
+│   │   ├── js/                             # markdown-it, highlight.js, gfm.js, math.js, viewer.js, search.js
+│   │   └── katex/                          # KaTeX 0.16.11 (min js/css, woff2 글꼴)
 │   └── src/com/kcube/md/
 │       ├── editor/
 │       │   ├── MarkdownMultiPageEditor.java    # Source/Preview/Split 탭 에디터

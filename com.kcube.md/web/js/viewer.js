@@ -33,6 +33,9 @@ function highlightCode(str, lang) {
 	if (lang === 'mermaid') {
 		return '<pre class="kc-mermaid" data-source="' + escapeHtml(str) + '"></pre>';
 	}
+	if (lang === 'math' && typeof mathPlaceholder === 'function') {
+		return mathPlaceholder('pre', str.replace(/\n$/, ''), true, null);
+	}
 	var label = escapeHtml(lang || 'Text');
 	var body;
 	if (lang && window.hljs && hljs.getLanguage(lang)) {
@@ -64,6 +67,11 @@ var md = window.markdownit({
 // GitHub 확장: 작업 목록, 알림 상자, 각주 (gfm.js)
 if (typeof kcGfm === 'function') {
 	md.use(kcGfm);
+}
+
+// 수식: $...$, $$...$$, ```math (math.js, KaTeX 는 수식이 있을 때만 불러온다)
+if (typeof kcMath === 'function') {
+	md.use(kcMath);
 }
 
 /** 허용하는 원시 HTML: 하나 이상의 &lt;br&gt;, &lt;br/&gt;, &lt;br /&gt; (공백 허용) */
@@ -157,7 +165,8 @@ function applyFont(family, sizePx) {
 		document.head.appendChild(style);
 	}
 	var face = '"' + family.replace(/["\\]/g, '') + '", monospace';
-	style.textContent = '.MarkDownViewer, .MarkDownViewer * { font-family: ' + face + ' !important; }'
+	// KaTeX 수식은 자체 수학 글꼴을 써야 하므로 제외한다
+	style.textContent = '.MarkDownViewer, .MarkDownViewer *:not(.katex):not(.katex *) { font-family: ' + face + ' !important; }'
 		+ '.MarkDownViewer { font-size: ' + sizePx + 'px !important; }'
 		+ '.MarkDownViewer .kc-mermaid, .MarkDownViewer .kc-mermaid * { font-family: "trebuchet ms", verdana, arial, sans-serif !important; }'
 		+ '.MarkDownViewer pre, .MarkDownViewer code { font-size: 1em !important; }'
@@ -194,6 +203,9 @@ function renderMarkdown(markdown, baseUri) {
 	sourceLineCount = (markdown || '').split('\n').length;
 	content.innerHTML = md.render(markdown || '');
 	resolveImages(baseUri);
+	if (typeof renderMath === 'function') {
+		renderMath(); // KaTeX 가 이미 있으면 동기로 채워 스크롤 복원 전에 높이를 확정한다
+	}
 	window.scrollTo(scrollX, scrollY);
 	if (typeof reapplySearch === 'function') {
 		reapplySearch();

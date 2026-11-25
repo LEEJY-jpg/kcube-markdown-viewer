@@ -61,6 +61,11 @@
   - Task lists: `- [ ]` / `- [x]` → read-only checkboxes (`li.task-list-item`, `contains-task-list` on the list).
   - Alerts: a block quote whose first line is `[!NOTE]`/`[!TIP]`/`[!IMPORTANT]`/`[!WARNING]`/`[!CAUTION]` loses that line and becomes `blockquote.markdown-alert-*` with a title.
   - Footnotes: `[^name]` references and `[^name]: text` definitions (continuing on lines indented by 4). Definitions move to a `section.footnotes` at the end, numbered in reference order; unreferenced definitions are dropped. `#fn-N` / `#fnref-N` links jump back and forth.
+- Math: the `js/math.js` plugin turns GitHub math syntax into KaTeX placeholders (`.kc-math`, TeX source in `data-tex`), and `renderMath()` fills them with KaTeX.
+  - Inline `$…$` (no space after the opening `$` or before the closing `$`, no digit right after the closing `$`, so `$5 and $10` is not math), `` $`…`$ ``, and `$$…$$` inside a paragraph.
+  - Blocks: `$$` … `$$` (including one-line `$$x$$`; no closing line means no math) and ```` ```math ```` code blocks.
+  - `katex/katex.min.js`, `katex.min.css` and the woff2 fonts (about 590 KB) are loaded only when math first appears. After that, math is filled synchronously so heights are final before the scroll position is restored. Errors are shown in red for that formula only (`throwOnError: false`).
+  - The font-forcing rule in `applyFont` excludes `.katex`, and search (`search.js`) skips math.
 - List bullets: `MarkDownViewer.css` sets every `li` to `decimal`, which numbered `ul` items too; `viewer.css` fixes it with `ul > li { list-style-type: inherit }`.
 
 ### 3.4 Preview search
@@ -117,6 +122,7 @@
 - Colors come in a light and a dark set chosen by the editor background (same rule as 3.7, `EditorTheme`). When the background preference changes, the same tokens get new colors and the text is repainted (`handlePreferenceStoreChanged`).
 
 ### 3.11 Items to consider later
+- [x] Math (KaTeX) — done (3.3)
 - [x] GFM extensions (task lists, alerts, footnotes) — done (3.3)
 - [x] Markdown syntax highlighting in the Source tab — done (3.10)
 - [x] Table of contents (Outline view) — done (3.8)
@@ -146,7 +152,8 @@ kcube-markdown-viewer/
 │   ├── web/                                # existing JS viewer (works offline)
 │   │   ├── viewer.html
 │   │   ├── css/                            # bootstrap, highlight theme, MarkDownViewer.css, viewer.css
-│   │   └── js/                             # markdown-it, highlight.js, gfm.js, viewer.js, search.js
+│   │   ├── js/                             # markdown-it, highlight.js, gfm.js, math.js, viewer.js, search.js
+│   │   └── katex/                          # KaTeX 0.16.11 (min js/css, woff2 fonts)
 │   └── src/com/kcube/md/
 │       ├── editor/
 │       │   ├── MarkdownMultiPageEditor.java    # Source/Preview/Split tab editor

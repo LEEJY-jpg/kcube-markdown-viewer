@@ -23,20 +23,26 @@ Content to enter at <https://marketplace.eclipse.org> (Add Content > Solution).
 
 ## Short description
 
-Edit Markdown files in Eclipse with Source / Preview tabs, a live preview view, and in-page search. Works fully offline.
+Edit Markdown files in Eclipse with Source / Preview / Split tabs, syntax colors, a live preview view, math and diagrams, and in-page search. Works fully offline.
 
 ## Full description
 
 KCube Markdown Viewer lets you edit Markdown (`.md`, `.markdown`) files in Eclipse and see the rendered result right away. A **Source** tab gives you the standard Eclipse text editor, and a **Preview** tab shows the rendered page.
 
 **Features**
-- Source / Preview tabs; the Preview tab is shown first when a file is opened for the first time
+- Source / Preview / Split tabs; the Preview tab is shown first when a file is opened for the first time, and the Split tab shows the editor and a live preview side by side
+- Syntax colors in the Source tab (light and dark sets)
+- Scroll position carried between tabs; the Split tab and the Markdown Preview view follow the Source as you scroll
 - Live **Markdown Preview** view that updates as you type
+- Outline view with the heading tree
 - Preview search (Ctrl/Cmd+F): case-insensitive, works with Korean, Enter / Shift+Enter to move between matches
-- The Preview uses the same font as the Source editor (Eclipse text font setting)
-- Code block syntax highlighting, a copy button, and collapse/expand; click inline code to copy it
+- The Preview uses the same font as the Source editor and follows a dark editor background
+- Links open in the system browser or, for local files, in Eclipse (`#L10` jumps to a line)
+- GitHub extensions: tables, strikethrough, task lists, alerts, footnotes
+- Code block syntax highlighting, a copy button, and collapse/expand; click inline code to copy it; Mermaid diagrams
+- Math with KaTeX (`$...$`, `$$...$$`, ```` ```math ````)
 - Images with paths relative to the md file are displayed
-- Fully offline: markdown-it, highlight.js, and CSS are bundled, so no CDN or network access is needed
+- Fully offline: markdown-it, highlight.js, Mermaid, KaTeX, and CSS are bundled, so no CDN or network access is needed
 
 **Requirements:** Eclipse 2024-09 (4.33) or later and Java 17+.
 

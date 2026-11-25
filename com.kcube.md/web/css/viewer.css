@@ -86,6 +86,24 @@ mark.kc-hit-active {
 	list-style-type: inherit;
 }
 
+/* 수식 (math.js + KaTeX) */
+.MarkDownViewer .kc-math-display {
+	display: block;
+	overflow-x: auto;
+	overflow-y: hidden;
+	margin: 0 0 10px;
+}
+.MarkDownViewer pre.kc-math-display {
+	background: transparent;
+	border: none;
+	padding: 0;
+	white-space: normal;
+	color: inherit;
+}
+html.kc-dark .MarkDownViewer pre.kc-math-display {
+	background: transparent;
+}
+
 /* GFM 확장 (gfm.js): 작업 목록, 알림 상자, 각주 */
 .MarkDownViewer ul.contains-task-list,
 .MarkDownViewer ol.contains-task-list {

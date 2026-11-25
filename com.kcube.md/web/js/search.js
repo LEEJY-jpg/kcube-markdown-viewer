@@ -89,13 +89,13 @@ function isCollapseHidden(el) {
 }
 
 /**
- * 검색 대상 텍스트 노드인지 판단한다 (복사 버튼/언어 라벨/mermaid 다이어그램 및 숨겨진 영역 제외).
+ * 검색 대상 텍스트 노드인지 판단한다 (복사 버튼/언어 라벨/mermaid 다이어그램/수식 및 숨겨진 영역 제외).
  * @param {Text} node 텍스트 노드
  * @returns {boolean} 대상 여부
  */
 function isSearchable(node) {
 	var el = node.parentElement;
-	if (!el || el.closest('.code-header, .kc-mermaid, button, script, style')) {
+	if (!el || el.closest('.code-header, .kc-mermaid, .kc-math, button, script, style')) {
 		return false;
 	}
 	return !isCollapseHidden(el);
