@@ -103,8 +103,16 @@
 - The *Markdown Preview* view and the Split tab preview follow the tracked editor's Source scrolling (`IViewportListener`, 30 ms coalescing) and re-sync after each re-render. Preview scrolling does not move the Source.
 - Images and mermaid diagrams that finish loading after the scroll can still shift the position slightly.
 
-### 3.10 Items to consider later
-- [ ] Markdown syntax highlighting in the Source tab (headings, bold, code blocks, etc.)
+### 3.10 Source syntax colors
+- `MarkdownTextEditor` uses `MarkdownSourceViewerConfiguration`, which keeps the default text editor configuration (`TextSourceViewerConfiguration`: spell checking, hyperlinks, etc.) and only adds syntax colors (`source/` package).
+- Multi-line syntax is split by a dedicated partitioning (`__kcube_markdown_partitioning`): fenced code blocks (<code>```</code>/<code>~~~</code>, up to the end of the document when there is no closing line) and HTML comments. The partitioner is attached to the document once, in `doSetInput`.
+- The body partition is colored by `MarkdownScanner`; rule order is priority.
+  - Line start: ATX headings (whole line), thematic breaks and setext underlines, block quotes (whole line), list markers (marker only).
+  - Inline (must close on the same line; ignored when the opening marker is followed by, or the closing marker preceded by, a space): backslash escapes, `code`, links/images/references, `<http…>`, `**bold**`/`__bold__`, `~~strike~~`, `*italic*`. `_italic_` is not matched because it misfires on snake_case.
+- Colors come in a light and a dark set chosen by the editor background (same rule as 3.7, `EditorTheme`). When the background preference changes, the same tokens get new colors and the text is repainted (`handlePreferenceStoreChanged`).
+
+### 3.11 Items to consider later
+- [x] Markdown syntax highlighting in the Source tab — done (3.10)
 - [x] Table of contents (Outline view) — done (3.8)
 - [x] Side-by-side Source | Preview tab — done (3.1 Split tab)
 - [x] Scroll synchronization between editor and preview — done (3.9)
@@ -143,13 +151,20 @@ kcube-markdown-viewer/
 │       ├── outline/
 │       │   ├── HeadingParser.java              # parses the heading tree
 │       │   └── MarkdownOutlinePage.java        # Outline view page
+│       ├── source/
+│       │   ├── MarkdownSourceViewerConfiguration.java  # Source syntax color configuration
+│       │   ├── MarkdownPartitions.java         # fenced code / comment partitioning
+│       │   ├── MarkdownScanner.java            # body syntax token scanner
+│       │   ├── MarkdownColors.java             # light/dark color tokens
+│       │   └── *Rule.java, ScannerUtil.java    # fence, line-start, link, inline, escape rules
 │       ├── preview/
 │       │   ├── MarkdownBrowser.java            # wrapper that loads the JS viewer and calls rendering
 │       │   └── LivePreview.java                # live refresh following an editor (view and Split)
 │       └── util/
 │           ├── JsUtils.java                    # Java string → JS literal conversion
 │           ├── EditorInputs.java               # md detection, image base path
-│           └── SourceScroll.java               # Source top line read/write (scroll sync)
+│           ├── SourceScroll.java               # Source top line read/write (scroll sync)
+│           └── EditorTheme.java                # editor background / dark detection (Preview theme and syntax colors)
 ├── com.kcube.md.feature/                   # installation unit (Feature)
 │   ├── feature.xml
 │   ├── build.properties

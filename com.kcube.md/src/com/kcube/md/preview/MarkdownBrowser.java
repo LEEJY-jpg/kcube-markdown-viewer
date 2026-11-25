@@ -5,8 +5,6 @@ import java.util.Enumeration;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.URIUtil;
-import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.preference.PreferenceConverter;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.swt.SWT;
@@ -22,12 +20,12 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.editors.text.EditorsUI;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kcube.md.util.EditorTheme;
 import com.kcube.md.util.JsUtils;
 
 /**
@@ -247,8 +245,7 @@ public class MarkdownBrowser {
 	 * @param property 변경된 설정 키
 	 */
 	private void onEditorPreferenceChange(String property) {
-		if ((AbstractTextEditor.PREFERENCE_COLOR_BACKGROUND.equals(property)
-				|| AbstractTextEditor.PREFERENCE_COLOR_BACKGROUND_SYSTEM_DEFAULT.equals(property)) && !_browser.isDisposed()) {
+		if (EditorTheme.isBackgroundProperty(property) && !_browser.isDisposed()) {
 			_browser.getDisplay().asyncExec(this::apply);
 		}
 	}
@@ -259,25 +256,10 @@ public class MarkdownBrowser {
 	 * @return applyTheme(...) 호출문
 	 */
 	private String themeScript() {
-		RGB bg = editorBackground();
-		boolean dark = (0.299 * bg.red + 0.587 * bg.green + 0.114 * bg.blue) < 128;
+		RGB bg = EditorTheme.background(_browser.getDisplay());
+		boolean dark = EditorTheme.isDark(bg);
 		String color = dark ? String.format("#%02x%02x%02x", bg.red, bg.green, bg.blue) : "";
 		return "applyTheme(" + dark + "," + JsUtils.toJsString(color) + ");";
-	}
-
-	/**
-	 * Eclipse 텍스트 에디터의 배경색을 구한다. 다크 테마는 이 설정을 어두운 색으로 바꾼다.
-	 * 시스템 기본색을 쓰도록 설정돼 있으면 OS 목록 배경색(macOS 다크 모드 반영)을 쓴다.
-	 *
-	 * @return 에디터 배경색
-	 */
-	private RGB editorBackground() {
-		IPreferenceStore store = EditorsUI.getPreferenceStore();
-		if (!store.getBoolean(AbstractTextEditor.PREFERENCE_COLOR_BACKGROUND_SYSTEM_DEFAULT)
-				&& !store.getString(AbstractTextEditor.PREFERENCE_COLOR_BACKGROUND).isEmpty()) {
-			return PreferenceConverter.getColor(store, AbstractTextEditor.PREFERENCE_COLOR_BACKGROUND);
-		}
-		return _browser.getDisplay().getSystemColor(SWT.COLOR_LIST_BACKGROUND).getRGB();
 	}
 
 	/**

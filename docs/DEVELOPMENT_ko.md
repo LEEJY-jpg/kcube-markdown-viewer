@@ -103,9 +103,17 @@
 - *Markdown Preview* 뷰와 Split 탭 미리보기는 추적 중인 에디터의 Source 스크롤을 따라간다 (`IViewportListener`, 30ms 로 묶음). 다시 렌더링한 뒤에도 맞춘다. Preview 를 스크롤해도 Source 는 움직이지 않는다.
 - 스크롤 뒤에 로딩이 끝나는 이미지·mermaid 다이어그램 때문에 위치가 조금 밀릴 수 있다.
 
-### 3.10 향후 검토 항목
-- [ ] Source 탭 Markdown 문법 하이라이팅 (제목, 굵게, 코드블록 등)
+### 3.10 Source 문법 색
+- `MarkdownTextEditor` 가 기본 텍스트 에디터 설정(`TextSourceViewerConfiguration`: 맞춤법 검사, 하이퍼링크 등)에 문법 색만 더한 `MarkdownSourceViewerConfiguration` 을 쓴다 (`source/` 패키지).
+- 여러 줄 문법은 전용 파티셔닝(`__kcube_markdown_partitioning`)으로 나눈다: 펜스 코드 블록(<code>```</code>/<code>~~~</code>, 닫는 줄이 없으면 문서 끝까지)과 HTML 주석. 파티셔너는 `doSetInput` 에서 문서에 한 번만 붙인다.
+- 본문 파티션은 `MarkdownScanner` 가 칠한다. 규칙 순서가 우선순위다.
+  - 줄머리: ATX 헤딩(줄 전체), 구분선·Setext 밑줄, 인용(줄 전체), 목록 기호(기호만).
+  - 인라인 (같은 줄 안에서 닫혀야 함, 여는 기호 뒤·닫는 기호 앞이 공백이면 무시): 역슬래시 이스케이프, `코드`, 링크·이미지·참조, `<http…>`, `**굵게**`/`__굵게__`, `~~취소선~~`, `*기울임*`. `_기울임_` 은 snake_case 오인 때문에 잡지 않는다.
+- 색은 에디터 배경(3.7 과 같은 기준, `EditorTheme`)에 따라 밝은/어두운 두 벌 중 고른다. 배경 설정이 바뀌면 같은 토큰의 색만 바꾸고 다시 칠한다 (`handlePreferenceStoreChanged`).
+
+### 3.11 향후 검토 항목
 - [x] Source | Preview 좌우 분할 탭 — 완료 (3.1 Split 탭)
+- [x] Source 탭 Markdown 문법 하이라이팅 — 완료 (3.10)
 - [x] 목차 (Outline 뷰 연동) — 완료 (3.8)
 - [x] 에디터 ↔ 미리보기 스크롤 동기화 — 완료 (3.9)
 - [x] 코드 하이라이팅 (highlight.js) — 완료
@@ -143,13 +151,20 @@ kcube-markdown-viewer/
 │       ├── outline/
 │       │   ├── HeadingParser.java              # 헤딩 트리 해석
 │       │   └── MarkdownOutlinePage.java        # Outline 뷰 페이지
+│       ├── source/
+│       │   ├── MarkdownSourceViewerConfiguration.java  # Source 문법 색 설정
+│       │   ├── MarkdownPartitions.java         # 펜스 코드·주석 파티셔닝
+│       │   ├── MarkdownScanner.java            # 본문 문법 토큰 스캐너
+│       │   ├── MarkdownColors.java             # 밝은/어두운 색 토큰
+│       │   └── *Rule.java, ScannerUtil.java    # 펜스·줄머리·링크·인라인·이스케이프 규칙
 │       ├── preview/
 │       │   ├── MarkdownBrowser.java            # JS 뷰어 로드 + 렌더링 호출 래퍼
 │       │   └── LivePreview.java                # 에디터 추적 실시간 갱신 (뷰·Split 공용)
 │       └── util/
 │           ├── JsUtils.java                    # Java 문자열 → JS 리터럴 변환
 │           ├── EditorInputs.java               # md 판별, 이미지 기준 경로
-│           └── SourceScroll.java               # Source 맨 위 줄 읽기/쓰기 (스크롤 동기화)
+│           ├── SourceScroll.java               # Source 맨 위 줄 읽기/쓰기 (스크롤 동기화)
+│           └── EditorTheme.java                # 에디터 배경색·다크 여부 (Preview 테마·문법 색 공용)
 ├── com.kcube.md.feature/                   # 설치 단위 (Feature)
 │   ├── feature.xml
 │   ├── build.properties
