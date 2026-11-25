@@ -81,6 +81,57 @@ mark.kc-hit-active {
 	background: #ff9632;
 }
 
+/* MarkDownViewer.css 가 모든 li 를 decimal 로 만들어 글머리 목록에도 번호가 붙던 것을 바로잡는다 (ul 은 브라우저 기본 disc/circle) */
+.MarkDownViewer ul > li {
+	list-style-type: inherit;
+}
+
+/* GFM 확장 (gfm.js): 작업 목록, 알림 상자, 각주 */
+.MarkDownViewer ul.contains-task-list,
+.MarkDownViewer ol.contains-task-list {
+	padding-left: 1.6em;
+}
+.MarkDownViewer li.task-list-item {
+	list-style: none;
+}
+.MarkDownViewer li.task-list-item .task-list-item-checkbox {
+	margin: 0 0.3em 0.2em -1.4em;
+	vertical-align: middle;
+}
+.MarkDownViewer blockquote.markdown-alert {
+	--kc-alert: #0969da;
+	border-left: 4px solid var(--kc-alert);
+	color: inherit;
+	font-size: inherit;
+	padding: 8px 16px;
+}
+.MarkDownViewer blockquote.markdown-alert-tip { --kc-alert: #1a7f37; }
+.MarkDownViewer blockquote.markdown-alert-important { --kc-alert: #8250df; }
+.MarkDownViewer blockquote.markdown-alert-warning { --kc-alert: #9a6700; }
+.MarkDownViewer blockquote.markdown-alert-caution { --kc-alert: #d1242f; }
+.MarkDownViewer .markdown-alert-title {
+	color: var(--kc-alert);
+	font-weight: bold;
+	margin-bottom: 4px;
+}
+.MarkDownViewer .footnote-ref {
+	font-size: 75%;
+}
+.MarkDownViewer .footnote-ref a,
+.MarkDownViewer .footnote-backref {
+	text-decoration: none;
+}
+.MarkDownViewer hr.footnotes-sep {
+	margin-top: 2em;
+}
+.MarkDownViewer section.footnotes {
+	font-size: 90%;
+	color: #555;
+}
+.MarkDownViewer section.footnotes p {
+	margin: 0 0 0.3em;
+}
+
 /* 다크 테마: applyTheme(true, ...) 가 <html> 에 kc-dark 클래스를 붙인다 */
 html.kc-dark body,
 html.kc-dark .MarkDownViewer {
@@ -102,6 +153,14 @@ html.kc-dark hr {
 }
 html.kc-dark blockquote {
 	border-left-color: #444;
+	color: #a8a8a8;
+}
+html.kc-dark .MarkDownViewer blockquote.markdown-alert { --kc-alert: #4493f8; color: #d4d4d4; }
+html.kc-dark .MarkDownViewer blockquote.markdown-alert-tip { --kc-alert: #3fb950; }
+html.kc-dark .MarkDownViewer blockquote.markdown-alert-important { --kc-alert: #ab7df8; }
+html.kc-dark .MarkDownViewer blockquote.markdown-alert-warning { --kc-alert: #d29922; }
+html.kc-dark .MarkDownViewer blockquote.markdown-alert-caution { --kc-alert: #f85149; }
+html.kc-dark .MarkDownViewer section.footnotes {
 	color: #a8a8a8;
 }
 html.kc-dark .MarkDownViewer pre {

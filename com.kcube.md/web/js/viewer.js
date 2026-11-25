@@ -61,6 +61,11 @@ var md = window.markdownit({
 	highlight: highlightCode
 });
 
+// GitHub 확장: 작업 목록, 알림 상자, 각주 (gfm.js)
+if (typeof kcGfm === 'function') {
+	md.use(kcGfm);
+}
+
 /** 허용하는 원시 HTML: 하나 이상의 &lt;br&gt;, &lt;br/&gt;, &lt;br /&gt; (공백 허용) */
 var ALLOWED_HTML = /^(\s*<br\s*\/?>\s*)+$/i;
 

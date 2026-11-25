@@ -57,6 +57,11 @@
 - Calls `browser.execute("renderMarkdown(...)")`.
 - Does not call it before the page has finished loading (`ProgressListener.completed`).
 - The JS side replaces only the body and **keeps the scroll position**.
+- Syntax: markdown-it defaults (CommonMark + tables, strikethrough, autolinks via `linkify`) plus GitHub extensions in the `js/gfm.js` plugin (written in-house, no external plugins).
+  - Task lists: `- [ ]` / `- [x]` → read-only checkboxes (`li.task-list-item`, `contains-task-list` on the list).
+  - Alerts: a block quote whose first line is `[!NOTE]`/`[!TIP]`/`[!IMPORTANT]`/`[!WARNING]`/`[!CAUTION]` loses that line and becomes `blockquote.markdown-alert-*` with a title.
+  - Footnotes: `[^name]` references and `[^name]: text` definitions (continuing on lines indented by 4). Definitions move to a `section.footnotes` at the end, numbered in reference order; unreferenced definitions are dropped. `#fn-N` / `#fnref-N` links jump back and forth.
+- List bullets: `MarkDownViewer.css` sets every `li` to `decimal`, which numbered `ul` items too; `viewer.css` fixes it with `ul > li { list-style-type: inherit }`.
 
 ### 3.4 Preview search
 - Ctrl/Cmd+F opens a search bar at the top right of the Preview (**case-insensitive**, Korean supported).
@@ -112,6 +117,7 @@
 - Colors come in a light and a dark set chosen by the editor background (same rule as 3.7, `EditorTheme`). When the background preference changes, the same tokens get new colors and the text is repainted (`handlePreferenceStoreChanged`).
 
 ### 3.11 Items to consider later
+- [x] GFM extensions (task lists, alerts, footnotes) — done (3.3)
 - [x] Markdown syntax highlighting in the Source tab — done (3.10)
 - [x] Table of contents (Outline view) — done (3.8)
 - [x] Side-by-side Source | Preview tab — done (3.1 Split tab)
@@ -140,7 +146,7 @@ kcube-markdown-viewer/
 │   ├── web/                                # existing JS viewer (works offline)
 │   │   ├── viewer.html
 │   │   ├── css/                            # bootstrap, highlight theme, MarkDownViewer.css, viewer.css
-│   │   └── js/                             # markdown-it, highlight.js, viewer.js, search.js
+│   │   └── js/                             # markdown-it, highlight.js, gfm.js, viewer.js, search.js
 │   └── src/com/kcube/md/
 │       ├── editor/
 │       │   ├── MarkdownMultiPageEditor.java    # Source/Preview/Split tab editor

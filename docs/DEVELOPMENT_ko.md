@@ -57,6 +57,11 @@
 - `browser.execute("renderMarkdown(...)")` 호출
 - 페이지 로딩 완료(`ProgressListener.completed`) 전에는 호출하지 않음
 - JS 쪽은 본문만 교체하고 **스크롤 위치 유지**
+- 문법: markdown-it 기본(CommonMark + 표, 취소선, 자동 링크 `linkify`)에 GitHub 확장을 `js/gfm.js` 플러그인으로 더한다 (외부 플러그인 없이 직접 구현).
+  - 작업 목록: `- [ ]` / `- [x]` → 읽기 전용 체크박스 (`li.task-list-item`, 목록에 `contains-task-list`).
+  - 알림 상자: 인용 첫 줄이 `[!NOTE]`/`[!TIP]`/`[!IMPORTANT]`/`[!WARNING]`/`[!CAUTION]` 이면 그 줄을 지우고 제목을 넣은 `blockquote.markdown-alert-*`.
+  - 각주: `[^이름]` 참조와 `[^이름]: 내용` 정의 (4칸 들여쓴 다음 줄까지). 정의는 문서 끝 `section.footnotes` 로 옮겨 참조 순서로 번호를 매기고, 참조되지 않은 정의는 버린다. `#fn-N` / `#fnref-N` 링크로 오간다.
+- 목록 글머리: `MarkDownViewer.css` 가 모든 `li` 를 `decimal` 로 만들어 `ul` 에도 번호가 붙던 것을 `viewer.css` 에서 `ul > li { list-style-type: inherit }` 로 바로잡았다.
 
 ### 3.4 Preview 검색
 - Ctrl/Cmd+F 로 Preview 우측 상단에 검색바를 연다 (**대소문자 구분 없음**, 한글 지원).
@@ -113,6 +118,7 @@
 
 ### 3.11 향후 검토 항목
 - [x] Source | Preview 좌우 분할 탭 — 완료 (3.1 Split 탭)
+- [x] GFM 확장 (작업 목록, 알림 상자, 각주) — 완료 (3.3)
 - [x] Source 탭 Markdown 문법 하이라이팅 — 완료 (3.10)
 - [x] 목차 (Outline 뷰 연동) — 완료 (3.8)
 - [x] 에디터 ↔ 미리보기 스크롤 동기화 — 완료 (3.9)
@@ -140,7 +146,7 @@ kcube-markdown-viewer/
 │   ├── web/                                # 기존 JS 뷰어 (오프라인 동작)
 │   │   ├── viewer.html
 │   │   ├── css/                            # bootstrap, highlight 테마, MarkDownViewer.css, viewer.css
-│   │   └── js/                             # markdown-it, highlight.js, viewer.js, search.js
+│   │   └── js/                             # markdown-it, highlight.js, gfm.js, viewer.js, search.js
 │   └── src/com/kcube/md/
 │       ├── editor/
 │       │   ├── MarkdownMultiPageEditor.java    # Source/Preview/Split 탭 에디터
