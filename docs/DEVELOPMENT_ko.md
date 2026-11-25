@@ -37,11 +37,14 @@
 
 ### 3.1 멀티탭 에디터 (주 기능)
 - `.md` 파일을 열면 기본 에디터로 동작 (`default="true"`)
-- **Source 탭**: 이클립스 기본 `TextEditor` 내장
+- **Source 탭**: 이클립스 기본 `TextEditor` 내장 (`MarkdownTextEditor`, 오른쪽에 숨긴 옆 패널을 둔 하위 클래스)
   - 저장, 다른 이름으로 저장, Undo/Redo, 찾기, dirty(*) 표시 지원
 - **Preview 탭**: SWT `Browser`에 JS 뷰어 로드
   - Preview 탭으로 전환될 때 최신 내용으로 렌더링
-  - 파일을 처음 열면 Preview 탭을 먼저 표시 (탭 순서는 Source, Preview 로 유지)
+  - 파일을 처음 열면 Preview 탭을 먼저 표시 (탭 순서는 Source, Preview, Split 으로 유지)
+- **Split 탭**: 왼쪽 Source, 오른쪽 실시간 미리보기 (반반, 경계선 드래그로 조절)
+  - 새 컨트롤을 만들지 않고 Source 탭의 에디터 컨트롤을 공유한다. 탭 항목 데이터에 텍스트 에디터를 넣어 Split 탭에서도 편집 단축키·전역 액션이 Source 탭과 똑같이 동작한다.
+  - 오른쪽 브라우저는 처음 Split 탭을 열 때 만들고, Split 탭에 있는 동안만 문서·스크롤을 추적한다 (`LivePreview`, 3.2 뷰와 같은 300ms 디바운스·스크롤 동기화).
 - 탭 전환 시 Undo/Copy/Find 등 전역 액션이 활성 탭에 맞게 연결/해제될 것
 
 ### 3.2 Markdown Preview 뷰 (보조 기능)
@@ -96,12 +99,13 @@
 - markdown-it core 규칙이 블록 요소(헤딩, 문단, 목록/항목, 인용, 표/행, 구분선)에 `data-line` = 토큰 `map[0]` 을 붙인다. `fence`/`code_block` 과 원시 HTML 문단은 바깥 태그에 직접 넣는다.
 - `scrollToLine(line)` 과 `getTopLine()` 은 이웃한 `data-line` 블록 사이를 보간해 원본 줄과 스크롤 위치를 서로 바꾼다 (소수 줄 허용, 서로 역함수).
 - 에디터 탭을 바꾸면 위치를 이어 준다. Source → Preview 는 Source 맨 위 줄로 스크롤하고, Preview → Source 는 Preview 맨 위 줄을 Source 맨 위로 올린다 (`MarkdownMultiPageEditor.pageChange`, `SourceScroll`).
-- *Markdown Preview* 뷰는 추적 중인 에디터의 Source 스크롤을 따라간다 (`IViewportListener`, 30ms 로 묶음). 다시 렌더링한 뒤에도 맞춘다. Preview 를 스크롤해도 Source 는 움직이지 않는다.
+- Split 탭과 Source 탭은 같은 에디터라 위치가 그대로이고, Preview ↔ Split 전환은 Preview ↔ Source 와 같다.
+- *Markdown Preview* 뷰와 Split 탭 미리보기는 추적 중인 에디터의 Source 스크롤을 따라간다 (`IViewportListener`, 30ms 로 묶음). 다시 렌더링한 뒤에도 맞춘다. Preview 를 스크롤해도 Source 는 움직이지 않는다.
 - 스크롤 뒤에 로딩이 끝나는 이미지·mermaid 다이어그램 때문에 위치가 조금 밀릴 수 있다.
 
 ### 3.10 향후 검토 항목
 - [ ] Source 탭 Markdown 문법 하이라이팅 (제목, 굵게, 코드블록 등)
-- [ ] Source | Preview 좌우 분할 탭
+- [x] Source | Preview 좌우 분할 탭 — 완료 (3.1 Split 탭)
 - [x] 목차 (Outline 뷰 연동) — 완료 (3.8)
 - [x] 에디터 ↔ 미리보기 스크롤 동기화 — 완료 (3.9)
 - [x] 코드 하이라이팅 (highlight.js) — 완료
@@ -131,7 +135,8 @@ kcube-markdown-viewer/
 │   │   └── js/                             # markdown-it, highlight.js, viewer.js, search.js
 │   └── src/com/kcube/md/
 │       ├── editor/
-│       │   ├── MarkdownMultiPageEditor.java    # Source/Preview 탭 에디터
+│       │   ├── MarkdownMultiPageEditor.java    # Source/Preview/Split 탭 에디터
+│       │   ├── MarkdownTextEditor.java         # Source·Split 공용 텍스트 에디터 (옆 패널)
 │       │   └── MarkdownEditorContributor.java  # 전역 액션 연결
 │       ├── views/
 │       │   └── MarkdownPreviewView.java        # 실시간 미리보기 뷰
@@ -139,7 +144,8 @@ kcube-markdown-viewer/
 │       │   ├── HeadingParser.java              # 헤딩 트리 해석
 │       │   └── MarkdownOutlinePage.java        # Outline 뷰 페이지
 │       ├── preview/
-│       │   └── MarkdownBrowser.java            # JS 뷰어 로드 + 렌더링 호출 래퍼
+│       │   ├── MarkdownBrowser.java            # JS 뷰어 로드 + 렌더링 호출 래퍼
+│       │   └── LivePreview.java                # 에디터 추적 실시간 갱신 (뷰·Split 공용)
 │       └── util/
 │           ├── JsUtils.java                    # Java 문자열 → JS 리터럴 변환
 │           ├── EditorInputs.java               # md 판별, 이미지 기준 경로

@@ -1,32 +1,24 @@
 package com.kcube.md.views;
 
-import org.eclipse.jface.text.DocumentEvent;
-import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IDocumentListener;
-import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.jface.text.IViewportListener;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IPartListener2;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.part.ViewPart;
-import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kcube.md.preview.LivePreview;
 import com.kcube.md.preview.MarkdownBrowser;
 import com.kcube.md.util.EditorInputs;
-import com.kcube.md.util.SourceScroll;
 
 /**
  * 활성 Markdown 에디터를 따라가며 실시간으로 렌더링 결과를 보여 주는 보조 뷰.
@@ -36,45 +28,11 @@ public class MarkdownPreviewView extends ViewPart {
 	/** 로거 */
 	private static final Logger _log = LoggerFactory.getLogger(MarkdownPreviewView.class);
 
-	/** 문서 변경 후 갱신까지의 지연(ms) */
-	private static final int DEBOUNCE_MS = 300;
-
 	/** 렌더링 브라우저 (생성 실패 시 null) */
 	private MarkdownBrowser _preview;
 
-	/** 현재 추적 중인 텍스트 에디터 */
-	private ITextEditor _tracked;
-
-	/** 현재 추적 중인 문서 */
-	private IDocument _document;
-
-	/** 디바운스되어 실행되는 갱신 작업 */
-	private final Runnable _refreshTask = this::refreshNow;
-
-	/** 스크롤 동기화 지연(ms). 연속 스크롤 이벤트를 한 번의 JS 호출로 묶는다. */
-	private static final int SCROLL_SYNC_MS = 30;
-
-	/** 현재 추적 중인 에디터의 텍스트 뷰어 (스크롤 감지용, 없으면 null) */
-	private ITextViewer _viewer;
-
-	/** 스크롤 동기화 작업 */
-	private final Runnable _scrollTask = this::syncScroll;
-
-	/** Source 스크롤을 감지해 미리보기 스크롤을 예약하는 리스너 */
-	private final IViewportListener _viewportListener = verticalOffset -> scheduleScrollSync();
-
-	/** 문서 변경을 감지해 갱신을 예약하는 리스너 */
-	private final IDocumentListener _documentListener = new IDocumentListener() {
-		@Override
-		public void documentAboutToBeChanged(DocumentEvent event) {
-			// nothing to do
-		}
-
-		@Override
-		public void documentChanged(DocumentEvent event) {
-			scheduleRefresh();
-		}
-	};
+	/** 활성 에디터를 따라가며 브라우저를 갱신하는 도우미 (브라우저 생성 실패 시 null) */
+	private LivePreview _live;
 
 	/** 활성 에디터 변경을 감지하는 파트 리스너 */
 	private final IPartListener2 _partListener = new IPartListener2() {
@@ -89,12 +47,10 @@ public class MarkdownPreviewView extends ViewPart {
 		@Override
 		public void partClosed(IWorkbenchPartReference ref) {
 			IWorkbenchPart part = ref.getPart(false);
-			if (_tracked != null && part != null && part.getAdapter(ITextEditor.class) == _tracked
-					|| part == _tracked) {
-				untrack();
-				if (_preview != null) {
-					_preview.clear();
-				}
+			ITextEditor tracked = _live == null ? null : _live.getTracked();
+			if (tracked != null && part != null && part.getAdapter(ITextEditor.class) == tracked || part == tracked) {
+				_live.untrack();
+				_preview.clear();
 			}
 		}
 	};
@@ -116,6 +72,7 @@ public class MarkdownPreviewView extends ViewPart {
 			new Label(parent, SWT.WRAP).setText("Preview is not available: " + e.getMessage());
 			return;
 		}
+		_live = new LivePreview(_preview);
 		IWorkbenchPage page = getSite().getPage();
 		page.addPartListener(_partListener);
 		track(page.getActiveEditor());
@@ -137,7 +94,9 @@ public class MarkdownPreviewView extends ViewPart {
 	@Override
 	public void dispose() {
 		getSite().getPage().removePartListener(_partListener);
-		untrack();
+		if (_live != null) {
+			_live.untrack();
+		}
 		super.dispose();
 	}
 
@@ -148,41 +107,12 @@ public class MarkdownPreviewView extends ViewPart {
 	 */
 	private void track(IEditorPart editor) {
 		ITextEditor textEditor = toTextEditor(editor);
-		if (textEditor == null || textEditor == _tracked || !EditorInputs.isMarkdown(textEditor.getEditorInput())) {
+		if (_live == null || textEditor == null || !EditorInputs.isMarkdown(textEditor.getEditorInput())) {
 			return;
 		}
-		IDocumentProvider provider = textEditor.getDocumentProvider();
-		IDocument document = provider == null ? null : provider.getDocument(textEditor.getEditorInput());
-		if (document == null) {
-			return;
-		}
-		untrack();
-		_tracked = textEditor;
-		_document = document;
-		_document.addDocumentListener(_documentListener);
-		_viewer = SourceScroll.viewer(textEditor);
-		if (_viewer != null) {
-			_viewer.addViewportListener(_viewportListener);
-		}
-		if (_log.isDebugEnabled()) {
+		if (textEditor != _live.getTracked() && _live.track(textEditor) && _log.isDebugEnabled()) {
 			_log.debug("Tracking markdown editor: {}", textEditor.getEditorInput().getName());
 		}
-		refreshNow();
-	}
-
-	/**
-	 * 현재 추적 중인 에디터/문서 리스너를 해제한다.
-	 */
-	private void untrack() {
-		if (_document != null) {
-			_document.removeDocumentListener(_documentListener);
-		}
-		if (_viewer != null && _viewer.getTextWidget() != null && !_viewer.getTextWidget().isDisposed()) {
-			_viewer.removeViewportListener(_viewportListener);
-		}
-		_viewer = null;
-		_document = null;
-		_tracked = null;
 	}
 
 	/**
@@ -197,51 +127,5 @@ public class MarkdownPreviewView extends ViewPart {
 			return te;
 		}
 		return editor.getAdapter(ITextEditor.class);
-	}
-
-	/**
-	 * 300ms 디바운스로 갱신을 예약한다.
-	 */
-	private void scheduleRefresh() {
-		if (_preview == null || _preview.getControl().isDisposed()) {
-			return;
-		}
-		Display display = _preview.getControl().getDisplay();
-		display.timerExec(-1, _refreshTask);
-		display.timerExec(DEBOUNCE_MS, _refreshTask);
-	}
-
-	/**
-	 * 추적 중인 문서를 즉시 렌더링하고 Source 의 맨 위 줄 위치로 스크롤한다.
-	 */
-	private void refreshNow() {
-		if (_preview == null || _preview.getControl().isDisposed() || _document == null) {
-			return;
-		}
-		IEditorInput input = _tracked.getEditorInput();
-		_preview.render(_document.get(), EditorInputs.baseUri(input));
-		syncScroll();
-	}
-
-	/**
-	 * Source 스크롤 직후 미리보기 스크롤을 짧게 미뤄 예약한다 (스크롤 중 이벤트가 몰려도 한 번만 실행).
-	 */
-	private void scheduleScrollSync() {
-		if (_preview == null || _preview.getControl().isDisposed()) {
-			return;
-		}
-		Display display = _preview.getControl().getDisplay();
-		display.timerExec(-1, _scrollTask);
-		display.timerExec(SCROLL_SYNC_MS, _scrollTask);
-	}
-
-	/**
-	 * 미리보기를 추적 중인 Source 의 맨 위 줄 위치로 스크롤한다.
-	 */
-	private void syncScroll() {
-		if (_preview == null || _preview.getControl().isDisposed() || _tracked == null) {
-			return;
-		}
-		_preview.scrollToLine(SourceScroll.topLine(_tracked));
 	}
 }

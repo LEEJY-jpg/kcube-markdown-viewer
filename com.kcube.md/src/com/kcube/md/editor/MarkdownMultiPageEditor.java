@@ -10,6 +10,7 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
 import org.eclipse.swt.SWTException;
+import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
@@ -17,7 +18,6 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IURIEditorInput;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.editors.text.TextEditor;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
@@ -26,14 +26,16 @@ import org.slf4j.LoggerFactory;
 
 import com.kcube.md.outline.MarkdownHeading;
 import com.kcube.md.outline.MarkdownOutlinePage;
+import com.kcube.md.preview.LivePreview;
 import com.kcube.md.preview.MarkdownBrowser;
 import com.kcube.md.util.EditorInputs;
 import com.kcube.md.util.SourceScroll;
 
 /**
- * Source / Preview 두 탭으로 구성된 Markdown 에디터.
+ * Source / Preview / Split 세 탭으로 구성된 Markdown 에디터.
  * <p>
- * Source 탭은 이클립스 기본 {@link TextEditor}, Preview 탭은 JS 뷰어를 로드한 브라우저다.
+ * Source 탭은 이클립스 기본 텍스트 에디터({@link MarkdownTextEditor}), Preview 탭은 JS 뷰어를 로드한 브라우저다.
+ * Split 탭은 Source 탭과 같은 에디터 컨트롤을 공유하면서 오른쪽에 실시간 미리보기를 붙여 보여 준다.
  */
 public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 
@@ -43,14 +45,26 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 	/** Source 탭 페이지 인덱스 */
 	private static final int PAGE_SOURCE = 0;
 
-	/** Source 탭에 내장된 텍스트 에디터 */
-	private TextEditor _textEditor;
+	/** Source·Split 탭이 공유하는 텍스트 에디터 */
+	private MarkdownTextEditor _textEditor;
 
 	/** Preview 탭의 브라우저 (브라우저 생성 실패 시 null) */
 	private MarkdownBrowser _preview;
 
 	/** Preview 탭 페이지 인덱스 */
 	private int _previewIndex = -1;
+
+	/** Split 탭 페이지 인덱스 (텍스트 에디터 생성 실패 시 -1) */
+	private int _splitIndex = -1;
+
+	/** Split 탭 오른쪽 미리보기 브라우저 (처음 Split 탭을 열 때 만든다) */
+	private MarkdownBrowser _splitPreview;
+
+	/** Split 탭 미리보기를 에디터에 맞춰 갱신하는 도우미 (Split 탭을 열 때 추적, 떠나면 해제) */
+	private LivePreview _splitLive;
+
+	/** Split 탭 미리보기 브라우저 생성을 시도했는지 여부 (실패 후 재시도하지 않기 위함) */
+	private boolean _splitCreated;
 
 	/** 직전에 보이던 페이지 인덱스 (탭 전환 시 스크롤 위치를 넘겨주기 위해 기억한다, 처음엔 -1) */
 	private int _activePageIndex = -1;
@@ -75,12 +89,13 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 	}
 
 	/**
-	 * Source / Preview 페이지를 만든다.
+	 * Source / Preview / Split 페이지를 만든다.
 	 */
 	@Override
 	protected void createPages() {
 		createEditPage();
 		createPreviewPage();
+		createSplitPage();
 		setPartName(getEditorInput().getName());
 		// 파일을 처음 열면 Preview 탭을 먼저 보여 준다.
 		if (_preview != null) {
@@ -93,7 +108,7 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 	 */
 	private void createEditPage() {
 		try {
-			_textEditor = new TextEditor();
+			_textEditor = new MarkdownTextEditor();
 			int index = addPage(_textEditor, getEditorInput());
 			setPageText(index, "Source");
 		} catch (PartInitException e) {
@@ -124,6 +139,29 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 	}
 
 	/**
+	 * Split 탭을 만든다. 새 컨트롤을 만들지 않고 Source 탭의 에디터 컨트롤을 그대로 공유하며, 탭에 텍스트 에디터를 연결해
+	 * Split 탭에서도 편집 단축키·전역 액션이 Source 탭과 똑같이 동작하게 한다.
+	 */
+	private void createSplitPage() {
+		if (_textEditor == null || getControl(PAGE_SOURCE) == null) {
+			return;
+		}
+		_splitIndex = addPage(getControl(PAGE_SOURCE));
+		setPageText(_splitIndex, "Split");
+		if (getContainer() instanceof CTabFolder folder) {
+			folder.getItem(_splitIndex).setData(_textEditor);
+		}
+	}
+
+	/**
+	 * @param pageIndex 페이지 인덱스
+	 * @return 텍스트 에디터가 보이는 탭(Source 또는 Split)이면 true
+	 */
+	private boolean isSourcePage(int pageIndex) {
+		return pageIndex == PAGE_SOURCE || pageIndex >= 0 && pageIndex == _splitIndex;
+	}
+
+	/**
 	 * 탭을 바꿀 때 보던 위치를 이어 준다. Preview 로 가면 최신 내용으로 렌더링하고 Source 맨 위 줄로 스크롤하며,
 	 * Source 로 가면 Preview 맨 위에 보이던 줄을 Source 맨 위로 올린다.
 	 *
@@ -134,19 +172,50 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 		int oldPageIndex = _activePageIndex;
 		_activePageIndex = newPageIndex;
 		double line = -1;
-		if (oldPageIndex == PAGE_SOURCE && newPageIndex == _previewIndex) {
+		if (isSourcePage(oldPageIndex) && newPageIndex == _previewIndex) {
 			line = SourceScroll.topLine(_textEditor);
-		} else if (oldPageIndex == _previewIndex && newPageIndex == PAGE_SOURCE && _preview != null) {
+		} else if (oldPageIndex == _previewIndex && isSourcePage(newPageIndex) && _preview != null) {
 			line = _preview.getTopLine();
 		}
 		super.pageChange(newPageIndex);
+		if (_textEditor != null) {
+			_textEditor.setSidePaneVisible(newPageIndex == _splitIndex);
+		}
 		if (newPageIndex == _previewIndex) {
 			refreshPreview();
 			if (_preview != null) {
 				_preview.scrollToLine(line);
 			}
-		} else if (newPageIndex == PAGE_SOURCE) {
+		} else if (isSourcePage(newPageIndex)) {
 			SourceScroll.setTopLine(_textEditor, line);
+		}
+		if (newPageIndex == _splitIndex) {
+			startSplitPreview();
+		} else if (_splitLive != null) {
+			_splitLive.untrack();
+		}
+	}
+
+	/**
+	 * Split 탭 오른쪽 미리보기를 (처음이면 만들어서) 에디터에 연결하고 바로 렌더링한다.
+	 */
+	private void startSplitPreview() {
+		if (!_splitCreated) {
+			_splitCreated = true;
+			Composite side = _textEditor.getSidePane();
+			try {
+				_splitPreview = new MarkdownBrowser(side);
+				_splitLive = new LivePreview(_splitPreview);
+			} catch (SWTError | SWTException e) {
+				if (_log.isErrorEnabled()) {
+					_log.error("Failed to create browser for split preview", e);
+				}
+				new Label(side, SWT.WRAP).setText("Preview is not available: " + e.getMessage());
+			}
+			side.layout();
+		}
+		if (_splitLive != null) {
+			_splitLive.track(_textEditor);
 		}
 	}
 
@@ -206,11 +275,16 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 		}
 		if (getActivePage() == _previewIndex) {
 			refreshPreview();
+		} else if (getActivePage() == _splitIndex && _splitLive != null) {
+			// 다른 이름으로 저장하면 문서 객체가 바뀔 수 있으므로 다시 연결한다.
+			_splitLive.untrack();
+			_splitLive.track(_textEditor);
 		}
 	}
 
 	/**
-	 * Outline 에서 고른 헤딩으로 이동한다. Preview 탭이면 미리보기를 스크롤하고, Source 탭이면 해당 줄을 선택한다.
+	 * Outline 에서 고른 헤딩으로 이동한다. Preview 탭이면 미리보기를 스크롤하고, Source·Split 탭이면 해당 줄을
+	 * 선택한다 (Split 미리보기는 Source 스크롤을 따라간다).
 	 *
 	 * @param heading 고른 헤딩
 	 */
@@ -231,6 +305,17 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 				_log.debug("Heading line out of range: {}", heading, e);
 			}
 		}
+	}
+
+	/**
+	 * Split 미리보기의 문서·스크롤 리스너를 해제한다.
+	 */
+	@Override
+	public void dispose() {
+		if (_splitLive != null) {
+			_splitLive.untrack();
+		}
+		super.dispose();
 	}
 
 	/**

@@ -37,11 +37,14 @@
 
 ### 3.1 Multi-page editor (main feature)
 - Works as the default editor when a `.md` file is opened (`default="true"`).
-- **Source tab**: embeds the standard Eclipse `TextEditor`.
+- **Source tab**: embeds the standard Eclipse `TextEditor` (`MarkdownTextEditor`, a subclass with a hidden side pane on the right).
   - Supports save, save as, undo/redo, find, and the dirty (*) indicator.
 - **Preview tab**: loads the JS viewer into an SWT `Browser`.
   - Renders the latest content when switching to the Preview tab.
-  - When a file is opened for the first time, the Preview tab is shown first (the tab order stays Source, Preview).
+  - When a file is opened for the first time, the Preview tab is shown first (the tab order stays Source, Preview, Split).
+- **Split tab**: Source on the left, live preview on the right (half and half, adjustable by dragging the divider).
+  - It creates no new control: it shares the Source tab's editor control. The tab item's data is the text editor, so editing key bindings and global actions behave exactly as in the Source tab.
+  - The right-hand browser is created the first time the Split tab opens, and it tracks the document and scrolling only while the Split tab is active (`LivePreview`, the same 300 ms debounce and scroll sync as the 3.2 view).
 - When switching tabs, global actions such as Undo/Copy/Find are connected to / disconnected from the active tab.
 
 ### 3.2 Markdown Preview view (supplementary feature)
@@ -96,13 +99,14 @@
 - A markdown-it core rule tags block elements (headings, paragraphs, lists/items, blockquotes, tables/rows, hr) with `data-line` = token `map[0]`; `fence`/`code_block` and the raw-HTML paragraph add it to their outer tag directly.
 - `scrollToLine(line)` and `getTopLine()` map between source lines and the page's scroll position by interpolating between consecutive `data-line` blocks (fractional lines allowed), so they are inverses of each other.
 - Switching editor tabs carries the position: Source → Preview scrolls to the Source's top visible line, Preview → Source puts the Preview's top line at the top of the Source (`MarkdownMultiPageEditor.pageChange`, `SourceScroll`).
-- The *Markdown Preview* view follows the tracked editor's Source scrolling (`IViewportListener`, 30 ms coalescing) and re-syncs after each re-render. Preview scrolling does not move the Source.
+- The Split and Source tabs are the same editor, so the position stays; Preview ↔ Split works like Preview ↔ Source.
+- The *Markdown Preview* view and the Split tab preview follow the tracked editor's Source scrolling (`IViewportListener`, 30 ms coalescing) and re-sync after each re-render. Preview scrolling does not move the Source.
 - Images and mermaid diagrams that finish loading after the scroll can still shift the position slightly.
 
 ### 3.10 Items to consider later
 - [ ] Markdown syntax highlighting in the Source tab (headings, bold, code blocks, etc.)
-- [ ] Side-by-side Source | Preview tab
 - [x] Table of contents (Outline view) — done (3.8)
+- [x] Side-by-side Source | Preview tab — done (3.1 Split tab)
 - [x] Scroll synchronization between editor and preview — done (3.9)
 - [x] Code highlighting (highlight.js) — done
 - [x] Search in the Preview — done (3.4)
@@ -131,7 +135,8 @@ kcube-markdown-viewer/
 │   │   └── js/                             # markdown-it, highlight.js, viewer.js, search.js
 │   └── src/com/kcube/md/
 │       ├── editor/
-│       │   ├── MarkdownMultiPageEditor.java    # Source/Preview tab editor
+│       │   ├── MarkdownMultiPageEditor.java    # Source/Preview/Split tab editor
+│       │   ├── MarkdownTextEditor.java         # text editor shared by Source and Split (side pane)
 │       │   └── MarkdownEditorContributor.java  # connects global actions
 │       ├── views/
 │       │   └── MarkdownPreviewView.java        # live preview view
@@ -139,7 +144,8 @@ kcube-markdown-viewer/
 │       │   ├── HeadingParser.java              # parses the heading tree
 │       │   └── MarkdownOutlinePage.java        # Outline view page
 │       ├── preview/
-│       │   └── MarkdownBrowser.java            # wrapper that loads the JS viewer and calls rendering
+│       │   ├── MarkdownBrowser.java            # wrapper that loads the JS viewer and calls rendering
+│       │   └── LivePreview.java                # live refresh following an editor (view and Split)
 │       └── util/
 │           ├── JsUtils.java                    # Java string → JS literal conversion
 │           ├── EditorInputs.java               # md detection, image base path
