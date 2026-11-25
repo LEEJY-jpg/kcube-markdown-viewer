@@ -136,10 +136,10 @@ Use this if you prefer not to touch the `dropins` folder. Eclipse downloads the 
    | Name | `KCube Markdown Viewer` |
    | Location | `jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v<version>/kcube-markdown-viewer-update-site-<version>.zip!/` |
 
-   For example, for version 1.0.0:
+   For example, for version 1.2.0:
 
    ```
-   jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v1.0.0/kcube-markdown-viewer-update-site-1.0.0.zip!/
+   jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v1.2.0/kcube-markdown-viewer-update-site-1.2.0.zip!/
    ```
 
    Keep the `jar:` prefix and the trailing `!/`. They tell Eclipse to read the update site straight from inside the zip.

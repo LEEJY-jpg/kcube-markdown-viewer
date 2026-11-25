@@ -136,10 +136,10 @@ open -a Eclipse --args -clean
    | Name | `KCube Markdown Viewer` |
    | Location | `jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v<버전>/kcube-markdown-viewer-update-site-<버전>.zip!/` |
 
-   1.0.0 버전 예시:
+   1.2.0 버전 예시:
 
    ```
-   jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v1.0.0/kcube-markdown-viewer-update-site-1.0.0.zip!/
+   jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v1.2.0/kcube-markdown-viewer-update-site-1.2.0.zip!/
    ```
 
    앞의 `jar:` 와 끝의 `!/` 는 반드시 유지합니다. zip 안의 업데이트 사이트를 그대로 읽으라는 뜻입니다.

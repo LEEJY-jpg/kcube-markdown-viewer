@@ -61,6 +61,6 @@ Open source under the Apache License 2.0.
 - [x] Release workflow green and the update site is reachable
 - [x] Install from the update site verified in Eclipse
 - [ ] Install verified in a clean Eclipse (no other KCube plug-ins, no local `dropins` jar)
-- [ ] GitHub Issues enabled
+- [x] GitHub Issues enabled
 - [ ] Screenshots prepared (no private project names)
 - [ ] Logo/icon prepared (optional)
