@@ -70,14 +70,22 @@
 - 제목은 본문 기준 상대 크기(h1 1.6em, h2 1.4em, h3 1.25em, h4 1.1em), 코드 블록·인라인 코드는 본문과 같은 크기를 쓴다.
 - Preferences 에서 텍스트 글꼴을 바꾸면 Preview 에도 즉시 반영된다.
 
-### 3.6 향후 검토 항목
+### 3.6 Preview 링크
+- Preview 의 링크 클릭은 브라우저 이동이 아니라 `viewer.js` 의 `onLinkClick` 에서 처리한다.
+- `#앵커` 링크는 문서 안에서 스크롤한다. 해당 `id` 요소가 없으면 GitHub 방식 slug 가 같은 헤딩을 찾는다 (중복은 `-1`, `-2` ...).
+- 그 밖의 링크는 md 파일 폴더 기준 절대 URL 로 바꿔 `BrowserFunction` `kcOpenLink(url)` 로 Java 에 넘기고, `LinkOpener` 가 연다.
+  - `http(s)`/`mailto` → 시스템 브라우저/메일 프로그램.
+  - `file:` → Eclipse 에디터 (워크스페이스 안이면 `IFile`, 밖이면 파일 스토어). `#L10` / `#L10-L20` / `#10` 은 텍스트 에디터에서 해당 줄을 선택한다.
+  - 파일이 없으면 안내 대화상자를 띄운다.
+
+### 3.7 향후 검토 항목
 - [ ] Source 탭 Markdown 문법 하이라이팅 (제목, 굵게, 코드블록 등)
 - [ ] Source | Preview 좌우 분할 탭
 - [ ] 에디터 ↔ 미리보기 스크롤 동기화
 - [x] 코드 하이라이팅 (highlight.js) — 완료
 - [x] Preview 검색 — 완료 (3.4)
 - [ ] 다크 테마 (`prefers-color-scheme`)
-- [ ] 미리보기 링크 클릭 시 이클립스에서 파일 열기 (`BrowserFunction`, JS → Java)
+- [x] 미리보기 링크 클릭 시 이클립스에서 파일 열기 — 완료 (3.6)
 
 ## 4. 아키텍처
 
@@ -124,6 +132,7 @@ kcube-markdown-viewer/
 - `org.eclipse.ui.editors`
 - `org.eclipse.jface.text`
 - `org.eclipse.core.runtime`
+- `org.eclipse.core.resources`, `org.eclipse.core.filesystem` (링크 파일 열기)
 - `org.slf4j.api`
 
 ### 4.3 plugin.xml 확장점
@@ -280,7 +289,9 @@ Require-Bundle: org.eclipse.ui.ide,
  org.eclipse.ui.editors,
  org.eclipse.ui.workbench.texteditor,
  org.eclipse.jface.text,
- org.eclipse.core.runtime
+ org.eclipse.core.runtime,
+ org.eclipse.core.resources,
+ org.eclipse.core.filesystem
 Import-Package: org.slf4j;version="[1.7.0,3.0.0)"
 Bundle-ActivationPolicy: lazy
 ```

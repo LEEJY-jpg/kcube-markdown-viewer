@@ -9,12 +9,12 @@ import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
+import org.eclipse.swt.browser.BrowserFunction;
 import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.browser.ProgressAdapter;
 import org.eclipse.swt.browser.ProgressEvent;
 import org.eclipse.swt.graphics.FontData;
-import org.eclipse.swt.program.Program;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.osgi.framework.Bundle;
@@ -93,6 +93,7 @@ public class MarkdownBrowser {
 				// nothing to do
 			}
 		});
+		createLinkFunction();
 		JFaceResources.getFontRegistry().addListener(_fontListener);
 		_browser.addDisposeListener(e -> JFaceResources.getFontRegistry().removeListener(_fontListener));
 		loadViewer();
@@ -221,7 +222,29 @@ public class MarkdownBrowser {
 	}
 
 	/**
-	 * 뷰어 페이지를 벗어나는 이동을 막고, 외부 http(s) 링크는 시스템 브라우저로 연다.
+	 * JS 의 링크 클릭 처리(onLinkClick)가 호출하는 kcOpenLink(url) 함수를 등록한다.
+	 * <p>
+	 * BrowserFunction 은 페이지가 다시 로드돼도 유지되고 브라우저와 함께 해제된다. 에디터 열기는 JS 콜백
+	 * 안에서 하지 않고 다음 UI 이벤트로 미룬다 (콜백 중 포커스·파트 전환을 피하기 위함).
+	 */
+	private void createLinkFunction() {
+		new BrowserFunction(_browser, "kcOpenLink") {
+			@Override
+			public Object function(Object[] arguments) {
+				if (arguments.length > 0 && arguments[0] instanceof String url) {
+					_browser.getDisplay().asyncExec(() -> {
+						if (!_browser.isDisposed()) {
+							LinkOpener.open(_browser.getShell(), url);
+						}
+					});
+				}
+				return null;
+			}
+		};
+	}
+
+	/**
+	 * 뷰어 페이지를 벗어나는 이동을 막는다. JS 에서 가로채지 못한 링크는 {@link LinkOpener} 로 연다.
 	 *
 	 * @param event 이동 이벤트
 	 */
@@ -231,8 +254,6 @@ public class MarkdownBrowser {
 			return;
 		}
 		event.doit = false;
-		if (location.startsWith("http://") || location.startsWith("https://")) {
-			Program.launch(location);
-		}
+		LinkOpener.open(_browser.getShell(), location);
 	}
 }

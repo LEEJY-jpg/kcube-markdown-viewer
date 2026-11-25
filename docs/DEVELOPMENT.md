@@ -70,14 +70,22 @@
 - Headings are sized relative to the body (h1 1.6em, h2 1.4em, h3 1.25em, h4 1.1em); code blocks and inline code use the body size.
 - When the text font is changed in Preferences, the Preview is updated immediately.
 
-### 3.6 Items to consider later
+### 3.6 Preview links
+- Clicks on links in the Preview are handled in `viewer.js` (`onLinkClick`), never by browser navigation.
+- `#anchor` links scroll within the document: an element with that `id`, otherwise a heading whose GitHub-style slug matches (duplicates get `-1`, `-2`, ...).
+- Other links are resolved against the md file's folder and passed to Java through the `kcOpenLink(url)` `BrowserFunction`; `LinkOpener` then opens them:
+  - `http(s)`/`mailto` → system browser / mail client.
+  - `file:` → Eclipse editor (workspace `IFile` when the file is in the workspace, otherwise the file store). `#L10` / `#L10-L20` / `#10` selects that line in text editors.
+  - A missing file shows an information dialog.
+
+### 3.7 Items to consider later
 - [ ] Markdown syntax highlighting in the Source tab (headings, bold, code blocks, etc.)
 - [ ] Side-by-side Source | Preview tab
 - [ ] Scroll synchronization between editor and preview
 - [x] Code highlighting (highlight.js) — done
 - [x] Search in the Preview — done (3.4)
 - [ ] Dark theme (`prefers-color-scheme`)
-- [ ] Open files in Eclipse when a preview link is clicked (`BrowserFunction`, JS → Java)
+- [x] Open files in Eclipse when a preview link is clicked — done (3.6)
 
 ## 4. Architecture
 
@@ -124,6 +132,7 @@ kcube-markdown-viewer/
 - `org.eclipse.ui.editors`
 - `org.eclipse.jface.text`
 - `org.eclipse.core.runtime`
+- `org.eclipse.core.resources`, `org.eclipse.core.filesystem` (opening linked files)
 - `org.slf4j.api`
 
 ### 4.3 plugin.xml extension points
@@ -280,7 +289,9 @@ Require-Bundle: org.eclipse.ui.ide,
  org.eclipse.ui.editors,
  org.eclipse.ui.workbench.texteditor,
  org.eclipse.jface.text,
- org.eclipse.core.runtime
+ org.eclipse.core.runtime,
+ org.eclipse.core.resources,
+ org.eclipse.core.filesystem
 Import-Package: org.slf4j;version="[1.7.0,3.0.0)"
 Bundle-ActivationPolicy: lazy
 ```

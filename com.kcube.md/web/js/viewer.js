@@ -8,6 +8,9 @@
 /** 렌더링 결과를 담는 컨테이너 */
 var content = document.getElementById('content');
 
+/** 현재 문서의 폴더 URI (상대 경로 링크·이미지 보정용, 없으면 빈 문자열) */
+var currentBaseUri = '';
+
 /**
  * 문자열을 HTML 로 이스케이프한다.
  * @param {string} str 원본 문자열
@@ -125,6 +128,7 @@ function applyFont(family, sizePx) {
 function renderMarkdown(markdown, baseUri) {
 	var scrollX = window.pageXOffset;
 	var scrollY = window.pageYOffset;
+	currentBaseUri = baseUri || '';
 	content.innerHTML = md.render(markdown || '');
 	resolveImages(baseUri);
 	window.scrollTo(scrollX, scrollY);
@@ -285,6 +289,82 @@ function resolveImages(baseUri) {
 		}
 	}
 }
+
+/**
+ * 헤딩 텍스트를 GitHub 방식의 앵커 이름으로 바꾼다 (소문자, 문장부호 제거, 공백은 '-').
+ * @param {string} text 헤딩 텍스트
+ * @returns {string} 앵커 이름
+ */
+function slugify(text) {
+	return text.trim().toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, '').replace(/\s/g, '-');
+}
+
+/**
+ * 문서 안의 앵커(#이름)로 스크롤한다. id 가 같은 요소가 없으면 헤딩 텍스트의 slug 로 찾는다.
+ * @param {string} fragment '#' 을 뺀 앵커 이름 (URL 인코딩 허용)
+ */
+function scrollToAnchor(fragment) {
+	var name;
+	try {
+		name = decodeURIComponent(fragment);
+	} catch (err) {
+		name = fragment;
+	}
+	var target = name ? document.getElementById(name) : null;
+	if (!target && name) {
+		var wanted = name.toLowerCase();
+		var headings = content.querySelectorAll('h1, h2, h3, h4, h5, h6');
+		var seen = {};
+		for (var i = 0; i < headings.length && !target; i++) {
+			// 같은 slug 가 반복되면 GitHub 처럼 -1, -2 ... 를 붙인다
+			var slug = slugify(headings[i].textContent);
+			var count = seen[slug] || 0;
+			seen[slug] = count + 1;
+			if ((count ? slug + '-' + count : slug) === wanted) {
+				target = headings[i];
+			}
+		}
+	}
+	if (target) {
+		target.scrollIntoView();
+	} else if (!name) {
+		window.scrollTo(0, 0);
+	}
+}
+
+/**
+ * 본문 링크 클릭을 처리한다. 문서 안 앵커는 스크롤하고, 그 밖의 링크는 절대 URI 로 바꿔
+ * Java 의 kcOpenLink() 에 넘긴다 (Eclipse 에디터 또는 시스템 브라우저로 열림).
+ * @param {MouseEvent} event 클릭 이벤트
+ */
+function onLinkClick(event) {
+	var link = event.target.closest ? event.target.closest('a[href]') : null;
+	if (!link || !content.contains(link)) {
+		return;
+	}
+	var href = link.getAttribute('href');
+	event.preventDefault();
+	if (!href) {
+		return;
+	}
+	if (href.charAt(0) === '#') {
+		scrollToAnchor(href.substring(1));
+		return;
+	}
+	var url;
+	if (/^[a-z][a-z0-9+.\-]*:/i.test(href)) {
+		url = href;
+	} else if (currentBaseUri) {
+		url = new URL(href, currentBaseUri).href;
+	} else {
+		return;
+	}
+	if (typeof window.kcOpenLink === 'function') {
+		window.kcOpenLink(url);
+	}
+}
+
+content.addEventListener('click', onLinkClick);
 
 /**
  * 텍스트를 클립보드로 복사한다.
