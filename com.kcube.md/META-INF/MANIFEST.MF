@@ -9,6 +9,7 @@ Bundle-ActivationPolicy: lazy
 Require-Bundle: org.eclipse.ui.ide,
  org.eclipse.ui,
  org.eclipse.ui.editors,
+ org.eclipse.ui.views,
  org.eclipse.ui.workbench.texteditor,
  org.eclipse.jface.text,
  org.eclipse.core.runtime,

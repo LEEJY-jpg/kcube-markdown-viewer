@@ -85,9 +85,17 @@
 - In dark mode `applyTheme(true, background)` adds the `kc-dark` class to `<html>` and matches the page background to the editor. Styles are the `html.kc-dark` rules in `viewer.css` (code highlight colors included).
 - mermaid chooses its `dark`/`default` theme from the page background, so diagrams are re-rendered when the theme changes.
 
-### 3.8 Items to consider later
+### 3.8 Outline (table of contents)
+- The editor provides `MarkdownOutlinePage` through the `IContentOutlinePage` adapter, so the Outline view shows the heading tree.
+- Headings are found in Java by `HeadingParser` (ATX `#`, Setext `===`/`---`, skipping fenced code blocks) and refreshed 500 ms after the document changes.
+- Selecting a heading selects its line in the Source tab, or scrolls the Preview tab to it.
+  - In the Preview, the markdown-it `heading_open` rule tags headings with their source line (`data-line`, 0-based) and `scrollToLine(line)` scrolls there.
+  - `HeadingParser` line numbers must use the same basis as markdown-it token `map[0]`.
+
+### 3.9 Items to consider later
 - [ ] Markdown syntax highlighting in the Source tab (headings, bold, code blocks, etc.)
 - [ ] Side-by-side Source | Preview tab
+- [x] Table of contents (Outline view) — done (3.8)
 - [ ] Scroll synchronization between editor and preview
 - [x] Code highlighting (highlight.js) — done
 - [x] Search in the Preview — done (3.4)
@@ -120,6 +128,9 @@ kcube-markdown-viewer/
 │       │   └── MarkdownEditorContributor.java  # connects global actions
 │       ├── views/
 │       │   └── MarkdownPreviewView.java        # live preview view
+│       ├── outline/
+│       │   ├── HeadingParser.java              # parses the heading tree
+│       │   └── MarkdownOutlinePage.java        # Outline view page
 │       ├── preview/
 │       │   └── MarkdownBrowser.java            # wrapper that loads the JS viewer and calls rendering
 │       └── util/
@@ -137,6 +148,7 @@ kcube-markdown-viewer/
 ### 4.2 Required bundles
 - `org.eclipse.ui`
 - `org.eclipse.ui.editors`
+- `org.eclipse.ui.views` (Outline page)
 - `org.eclipse.jface.text`
 - `org.eclipse.core.runtime`
 - `org.eclipse.core.resources`, `org.eclipse.core.filesystem` (opening linked files)
@@ -147,7 +159,7 @@ kcube-markdown-viewer/
 - `org.eclipse.ui.views` — registers the Markdown category and the Preview view
 
 ### 4.4 Java ↔ JS integration rules
-- JS entry points (called from Java with `browser.execute`): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `applyTheme(dark, background)`, `openSearch()`
+- JS entry points (called from Java with `browser.execute`): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `applyTheme(dark, background)`, `openSearch()`, `scrollToLine(line)`
 - Loading the viewer page: `FrameworkUtil.getBundle(...).getEntry("web/viewer.html")` → `FileLocator.toFileURL()` → `browser.setUrl()`
 - Always use `JsUtils.toJsString()` to pass strings
   - Escape `"`, `\`, `\n`, `\r`, ` `, ` `
@@ -294,6 +306,7 @@ Automatic-Module-Name: com.kcube.md
 Require-Bundle: org.eclipse.ui.ide,
  org.eclipse.ui,
  org.eclipse.ui.editors,
+ org.eclipse.ui.views,
  org.eclipse.ui.workbench.texteditor,
  org.eclipse.jface.text,
  org.eclipse.core.runtime,

@@ -158,6 +158,21 @@ public class MarkdownBrowser {
 	}
 
 	/**
+	 * 원본 줄 번호의 헤딩으로 미리보기를 스크롤한다. 페이지가 준비되지 않았으면 무시한다.
+	 *
+	 * @param line 원본 줄 번호 (0 부터)
+	 */
+	public void scrollToLine(int line) {
+		if (!_ready || _browser.isDisposed()) {
+			return;
+		}
+		apply();
+		if (!_browser.execute("scrollToLine(" + line + ");") && _log.isWarnEnabled()) {
+			_log.warn("Failed to execute scrollToLine script");
+		}
+	}
+
+	/**
 	 * 보관 중인 Markdown 을 JS 의 renderMarkdown() 으로 전달한다.
 	 * <p>
 	 * 내용·기준 경로·글꼴·테마가 마지막 전달과 같으면 브라우저 호출을 생략한다.

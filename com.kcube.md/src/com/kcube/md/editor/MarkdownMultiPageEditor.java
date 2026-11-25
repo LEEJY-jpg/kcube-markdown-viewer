@@ -4,7 +4,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IRegion;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
 import org.eclipse.swt.SWTException;
@@ -18,9 +20,12 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.editors.text.TextEditor;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
+import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.kcube.md.outline.MarkdownHeading;
+import com.kcube.md.outline.MarkdownOutlinePage;
 import com.kcube.md.preview.MarkdownBrowser;
 import com.kcube.md.util.EditorInputs;
 
@@ -45,6 +50,9 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 
 	/** Preview 탭 페이지 인덱스 */
 	private int _previewIndex = -1;
+
+	/** Outline 뷰에 보여 줄 헤딩 트리 페이지 (Outline 이 처음 요청할 때 만든다) */
+	private MarkdownOutlinePage _outlinePage;
 
 	/**
 	 * 파일 기반 입력만 허용한다.
@@ -175,8 +183,35 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 		IEditorInput input = _textEditor.getEditorInput();
 		setInput(input);
 		setPartName(input.getName());
+		if (_outlinePage != null) {
+			_outlinePage.setDocument(getDocument());
+		}
 		if (getActivePage() == _previewIndex) {
 			refreshPreview();
+		}
+	}
+
+	/**
+	 * Outline 에서 고른 헤딩으로 이동한다. Preview 탭이면 미리보기를 스크롤하고, Source 탭이면 해당 줄을 선택한다.
+	 *
+	 * @param heading 고른 헤딩
+	 */
+	private void revealHeading(MarkdownHeading heading) {
+		if (getActivePage() == _previewIndex && _preview != null) {
+			_preview.scrollToLine(heading.getLine());
+			return;
+		}
+		IDocument document = getDocument();
+		if (document == null || heading.getLine() >= document.getNumberOfLines()) {
+			return;
+		}
+		try {
+			IRegion region = document.getLineInformation(heading.getLine());
+			_textEditor.selectAndReveal(region.getOffset(), region.getLength());
+		} catch (BadLocationException e) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Heading line out of range: {}", heading, e);
+			}
 		}
 	}
 
@@ -189,7 +224,8 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 	}
 
 	/**
-	 * Preview 뷰 등이 텍스트 에디터를 얻을 수 있도록 {@link ITextEditor} 어댑터를 제공한다.
+	 * Preview 뷰 등이 텍스트 에디터를 얻을 수 있도록 {@link ITextEditor} 어댑터를, Outline 뷰에는 헤딩 트리
+	 * ({@link IContentOutlinePage}) 를 제공한다.
 	 *
 	 * @param adapter 요청 타입
 	 * @return 어댑터 객체
@@ -198,6 +234,12 @@ public class MarkdownMultiPageEditor extends MultiPageEditorPart {
 	public <T> T getAdapter(Class<T> adapter) {
 		if (adapter == ITextEditor.class && _textEditor != null) {
 			return adapter.cast(_textEditor);
+		}
+		if (adapter == IContentOutlinePage.class && _textEditor != null) {
+			if (_outlinePage == null || (_outlinePage.getControl() != null && _outlinePage.getControl().isDisposed())) {
+				_outlinePage = new MarkdownOutlinePage(getDocument(), this::revealHeading);
+			}
+			return adapter.cast(_outlinePage);
 		}
 		return super.getAdapter(adapter);
 	}

@@ -85,9 +85,17 @@
 - 다크 테마는 `applyTheme(true, 배경색)` 이 `<html>` 에 `kc-dark` 클래스를 붙이고, 본문 배경을 에디터 배경색에 맞춘다. 스타일은 `viewer.css` 의 `html.kc-dark` 규칙 (코드 하이라이트 색 포함).
 - mermaid 는 본문 배경 밝기로 `dark`/`default` 테마를 고르므로 테마가 바뀌면 다시 렌더링한다.
 
-### 3.8 향후 검토 항목
+### 3.8 Outline (목차)
+- 에디터가 `IContentOutlinePage` 어댑터로 `MarkdownOutlinePage` 를 제공해 Outline 뷰에 헤딩 트리를 보여 준다.
+- 헤딩은 Java `HeadingParser` 가 찾는다 (ATX `#`, Setext `===`/`---`, 펜스 코드 블록 안은 제외). 문서가 바뀌면 500ms 뒤 갱신한다.
+- 헤딩을 고르면 Source 탭에서는 그 줄을 선택하고, Preview 탭에서는 그 헤딩으로 스크롤한다.
+  - Preview 는 markdown-it `heading_open` 규칙이 헤딩에 원본 줄 번호(`data-line`, 0 부터)를 붙이고, `scrollToLine(line)` 이 그 줄로 스크롤한다.
+  - `HeadingParser` 의 줄 번호는 markdown-it 토큰 `map[0]` 과 같은 기준이어야 한다.
+
+### 3.9 향후 검토 항목
 - [ ] Source 탭 Markdown 문법 하이라이팅 (제목, 굵게, 코드블록 등)
 - [ ] Source | Preview 좌우 분할 탭
+- [x] 목차 (Outline 뷰 연동) — 완료 (3.8)
 - [ ] 에디터 ↔ 미리보기 스크롤 동기화
 - [x] 코드 하이라이팅 (highlight.js) — 완료
 - [x] Preview 검색 — 완료 (3.4)
@@ -120,6 +128,9 @@ kcube-markdown-viewer/
 │       │   └── MarkdownEditorContributor.java  # 전역 액션 연결
 │       ├── views/
 │       │   └── MarkdownPreviewView.java        # 실시간 미리보기 뷰
+│       ├── outline/
+│       │   ├── HeadingParser.java              # 헤딩 트리 해석
+│       │   └── MarkdownOutlinePage.java        # Outline 뷰 페이지
 │       ├── preview/
 │       │   └── MarkdownBrowser.java            # JS 뷰어 로드 + 렌더링 호출 래퍼
 │       └── util/
@@ -137,6 +148,7 @@ kcube-markdown-viewer/
 ### 4.2 의존 번들
 - `org.eclipse.ui`
 - `org.eclipse.ui.editors`
+- `org.eclipse.ui.views` (Outline 페이지)
 - `org.eclipse.jface.text`
 - `org.eclipse.core.runtime`
 - `org.eclipse.core.resources`, `org.eclipse.core.filesystem` (링크 파일 열기)
@@ -147,7 +159,7 @@ kcube-markdown-viewer/
 - `org.eclipse.ui.views` — Markdown 카테고리 및 Preview 뷰 등록
 
 ### 4.4 Java ↔ JS 연동 규칙
-- JS 진입점 (Java 에서 `browser.execute` 로 호출): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `applyTheme(dark, background)`, `openSearch()`
+- JS 진입점 (Java 에서 `browser.execute` 로 호출): `renderMarkdown(markdown, baseUri)`, `applyFont(family, sizePx)`, `applyTheme(dark, background)`, `openSearch()`, `scrollToLine(line)`
 - 뷰어 페이지 로드: `FrameworkUtil.getBundle(...).getEntry("web/viewer.html")` → `FileLocator.toFileURL()` → `browser.setUrl()`
 - 문자열 전달은 반드시 `JsUtils.toJsString()` 사용
   - `"`, `\`, `\n`, `\r`, `\u2028`, `\u2029` 이스케이프
@@ -294,6 +306,7 @@ Automatic-Module-Name: com.kcube.md
 Require-Bundle: org.eclipse.ui.ide,
  org.eclipse.ui,
  org.eclipse.ui.editors,
+ org.eclipse.ui.views,
  org.eclipse.ui.workbench.texteditor,
  org.eclipse.jface.text,
  org.eclipse.core.runtime,

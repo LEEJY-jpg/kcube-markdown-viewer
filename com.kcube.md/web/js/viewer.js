@@ -98,6 +98,23 @@ md.renderer.rules.code_inline = function(tokens, idx) {
 };
 
 /**
+ * 헤딩에 원본 줄 번호(0 부터)를 data-line 속성으로 남긴다. Outline 에서 헤딩을 고르면 이 줄로 스크롤한다.
+ * @param {Array} tokens 토큰 목록
+ * @param {number} idx 현재 토큰 인덱스
+ * @param {Object} options markdown-it 옵션
+ * @param {Object} env 렌더링 환경
+ * @param {Object} self 렌더러
+ * @returns {string} 출력 HTML
+ */
+md.renderer.rules.heading_open = function(tokens, idx, options, env, self) {
+	var token = tokens[idx];
+	if (token.map) {
+		token.attrSet('data-line', String(token.map[0]));
+	}
+	return self.renderToken(tokens, idx, options);
+};
+
+/**
  * Eclipse 텍스트 에디터(Source 탭)와 동일한 글꼴을 본문 전체에 적용한다.
  * @param {string} family 글꼴 이름
  * @param {number} sizePx 글꼴 크기(px)
@@ -312,6 +329,26 @@ function resolveImages(baseUri) {
  */
 function slugify(text) {
 	return text.trim().toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, '').replace(/\s/g, '-');
+}
+
+/**
+ * 원본 줄 번호의 헤딩으로 스크롤한다. 정확히 맞는 헤딩이 없으면 그 앞의 가장 가까운 헤딩으로 간다.
+ * @param {number} line 원본 줄 번호 (0 부터)
+ */
+function scrollToLine(line) {
+	var headings = content.querySelectorAll('[data-line]');
+	var target = null;
+	for (var i = 0; i < headings.length; i++) {
+		if (Number(headings[i].getAttribute('data-line')) > line) {
+			break;
+		}
+		target = headings[i];
+	}
+	if (target) {
+		target.scrollIntoView();
+	} else {
+		window.scrollTo(0, 0);
+	}
 }
 
 /**
