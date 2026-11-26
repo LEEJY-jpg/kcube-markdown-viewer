@@ -212,7 +212,7 @@ kcube-markdown-viewer/
 | Item | Description |
 |---|---|
 | Java version | Java 17 |
-| Browser engine | Edge (WebView2) is recommended on Windows: `-Dorg.eclipse.swt.browser.DefaultType=edge` |
+| Browser engine | On Windows the browser is created with `SWT.EDGE` (WebView2). If that fails, a Korean/English IE-mode notice (how to install WebView2 to switch to Edge) is shown instead of the viewer. Edge can deadlock when work runs directly inside a callback, so defer it with `asyncExec` |
 | JS compatibility | Verified against Edge/WebKit, not legacy IE mode |
 | External resources | **No CDN** — to support internal/offline networks, all libraries are included locally |
 | Image paths | Relative to the md file → the base path must be passed to JS for correction |

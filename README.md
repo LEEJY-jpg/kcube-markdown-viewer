@@ -24,6 +24,7 @@ An Eclipse plug-in that lets you edit Markdown (`.md`, `.markdown`) files and pr
 
 - Eclipse 4.33 (2024-09) or later
 - Java 17 or later (build and runtime)
+- Windows: [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) for the Preview
 
 ## Installation
 

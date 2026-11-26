@@ -1,13 +1,16 @@
 package com.kcube.md.preview;
 
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.List;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.URIUtil;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTError;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.BrowserFunction;
@@ -19,6 +22,7 @@ import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -40,6 +44,35 @@ public class MarkdownBrowser {
 
 	/** 번들 안의 JS 뷰어 페이지 경로 */
 	private static final String VIEWER_PATH = "web/viewer.html";
+
+	/** Windows 에서 IE 로 동작할 때 뷰어 대신 보여 주는 Edge 전환 안내 페이지 (IE 에서도 보여야 하므로 정적 HTML) */
+	private static final String IE_MODE_GUIDE_HTML = """
+			<!DOCTYPE html>
+			<html>
+			<head><meta charset="UTF-8"></head>
+			<body style="font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; font-size: 14px; padding: 16px;">
+			<h3>브라우저를 Edge 로 변경해 주세요</h3>
+			<p>현재 <b>Internet Explorer(IE) 모드</b>로 동작하고 있어 Markdown 미리보기를 표시할 수 없습니다.
+			Edge 로 전환하려면 <b>Microsoft Edge WebView2 Runtime</b> 이 필요합니다.</p>
+			<ol>
+			<li>아래 주소에서 WebView2 Runtime(Evergreen)을 설치합니다. 인터넷이 안 되는 PC 는 Standalone Installer 를 사용합니다.<br>
+			https://developer.microsoft.com/microsoft-edge/webview2/</li>
+			<li>Eclipse 를 다시 시작합니다.</li>
+			</ol>
+			<p>이미 설치했는데도 이 안내가 보이면 Error Log 뷰를 확인해 주세요. Source 탭은 그대로 사용할 수 있습니다.</p>
+			<hr>
+			<h3>Please switch the browser to Edge</h3>
+			<p>The Preview is running in <b>Internet Explorer (IE) mode</b>, which cannot display Markdown.
+			Switching to Edge requires the <b>Microsoft Edge WebView2 Runtime</b>.</p>
+			<ol>
+			<li>Install the Evergreen WebView2 Runtime from the address above
+			(use the Standalone Installer on a PC without internet access).</li>
+			<li>Restart Eclipse.</li>
+			</ol>
+			<p>If it is already installed, check the Error Log view. The Source tab works as usual.</p>
+			</body>
+			</html>
+			""";
 
 	/** 내부 SWT 브라우저 */
 	private final Browser _browser;
@@ -77,7 +110,7 @@ public class MarkdownBrowser {
 	 * @param parent 부모 컴포짓
 	 */
 	public MarkdownBrowser(Composite parent) {
-		_browser = new Browser(parent, SWT.NONE);
+		_browser = createBrowser(parent);
 		_browser.addProgressListener(new ProgressAdapter() {
 			@Override
 			public void completed(ProgressEvent event) {
@@ -114,7 +147,51 @@ public class MarkdownBrowser {
 			JFaceResources.getFontRegistry().removeListener(_fontListener);
 			EditorsUI.getPreferenceStore().removePropertyChangeListener(_themeListener);
 		});
-		loadViewer();
+		if (isWindows() && !"edge".equals(_browser.getBrowserType())) {
+			// IE 에서는 뷰어가 동작하지 않는다. _ready 가 false 로 남으므로 이후의 JS 호출은 모두 생략된다
+			if (_log.isWarnEnabled()) {
+				_log.warn("Preview is disabled because the browser engine is {}", _browser.getBrowserType());
+			}
+			_browser.setText(IE_MODE_GUIDE_HTML);
+		} else {
+			loadViewer();
+		}
+	}
+
+	/**
+	 * 내부 브라우저를 만든다. Windows 의 SWT 기본 엔진은 Eclipse 버전에 따라 IE 이므로 Edge(WebView2) 를 먼저 요청한다.
+	 * <p>
+	 * Edge 를 만들지 못하면 안내 페이지를 보여 줄 수 있도록 기본 엔진으로 다시 만든다.
+	 *
+	 * @param parent 부모 컴포짓
+	 * @return 생성한 브라우저
+	 */
+	private static Browser createBrowser(Composite parent) {
+		if (!isWindows()) {
+			return new Browser(parent, SWT.NONE);
+		}
+		List<Control> existing = Arrays.asList(parent.getChildren());
+		try {
+			return new Browser(parent, SWT.EDGE);
+		} catch (SWTError e) {
+			if (_log.isWarnEnabled()) {
+				_log.warn("Failed to create Edge (WebView2) browser", e);
+			}
+			// 생성에 실패해도 만들다 만 컨트롤은 부모에 남으므로 치운다
+			for (Control child : parent.getChildren()) {
+				if (!existing.contains(child)) {
+					child.dispose();
+				}
+			}
+			return new Browser(parent, SWT.NONE);
+		}
+	}
+
+	/**
+	 * @return Windows 에서 실행 중이면 true
+	 */
+	private static boolean isWindows() {
+		return "win32".equals(SWT.getPlatform());
 	}
 
 	/**
@@ -305,19 +382,14 @@ public class MarkdownBrowser {
 	/**
 	 * JS 의 링크 클릭 처리(onLinkClick)가 호출하는 kcOpenLink(url) 함수를 등록한다.
 	 * <p>
-	 * BrowserFunction 은 페이지가 다시 로드돼도 유지되고 브라우저와 함께 해제된다. 에디터 열기는 JS 콜백
-	 * 안에서 하지 않고 다음 UI 이벤트로 미룬다 (콜백 중 포커스·파트 전환을 피하기 위함).
+	 * BrowserFunction 은 페이지가 다시 로드돼도 유지되고 브라우저와 함께 해제된다.
 	 */
 	private void createLinkFunction() {
 		new BrowserFunction(_browser, "kcOpenLink") {
 			@Override
 			public Object function(Object[] arguments) {
 				if (arguments.length > 0 && arguments[0] instanceof String url) {
-					_browser.getDisplay().asyncExec(() -> {
-						if (!_browser.isDisposed()) {
-							LinkOpener.open(_browser.getShell(), url);
-						}
-					});
+					openLinkLater(url);
 				}
 				return null;
 			}
@@ -335,6 +407,21 @@ public class MarkdownBrowser {
 			return;
 		}
 		event.doit = false;
-		LinkOpener.open(_browser.getShell(), location);
+		openLinkLater(location);
+	}
+
+	/**
+	 * 링크를 다음 UI 이벤트에서 연다. 브라우저 콜백 안에서 바로 열면 포커스·파트 전환이 겹치고,
+	 * Edge(WebView2) 는 콜백이 직렬 실행되어 교착이 생길 수 있다.
+	 *
+	 * @param url 열 링크
+	 */
+	private void openLinkLater(String url) {
+		Display display = _browser.getDisplay();
+		display.asyncExec(() -> {
+			if (!_browser.isDisposed()) {
+				LinkOpener.open(_browser.getShell(), url);
+			}
+		});
 	}
 }

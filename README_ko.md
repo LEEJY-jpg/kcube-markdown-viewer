@@ -24,6 +24,7 @@ Eclipse에서 Markdown(`.md`, `.markdown`) 파일을 **Source / Preview** 탭으
 
 - Eclipse 4.33(2024-09) 이상
 - Java 17 이상 (빌드 및 실행)
+- Windows: Preview 용 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)
 
 ## 설치
 

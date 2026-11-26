@@ -72,6 +72,7 @@ open -a Eclipse --args -clean
 
 - Eclipse 4.33(2024-09) 이상 (Eclipse IDE for Java Developers 등 일반 배포판)
 - Eclipse 를 실행할 JRE/JDK 17 이상 (Eclipse 4.33 자체 요구사항)
+- Windows 만 해당: Preview 용 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (Windows 11 에는 포함. `eclipse.ini` 설정 없이 플러그인이 사용한다)
 - 배포받은 `com.kcube.md.kcube-markdown-viewer-<버전>.jar`
 
 ## 설치 (dropins 방식)
@@ -136,10 +137,10 @@ open -a Eclipse --args -clean
    | Name | `KCube Markdown Viewer` |
    | Location | `jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v<버전>/kcube-markdown-viewer-update-site-<버전>.zip!/` |
 
-   1.2.0 버전 예시:
+   1.2.1 버전 예시:
 
    ```
-   jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v1.2.0/kcube-markdown-viewer-update-site-1.2.0.zip!/
+   jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v1.2.1/kcube-markdown-viewer-update-site-1.2.1.zip!/
    ```
 
    앞의 `jar:` 와 끝의 `!/` 는 반드시 유지합니다. zip 안의 업데이트 사이트를 그대로 읽으라는 뜻입니다.
@@ -176,5 +177,6 @@ Eclipse 를 종료하고 `dropins` 폴더에서 jar 를 삭제한 뒤 `-clean` �
 |---|---|
 | Source/Preview 탭이 보이지 않는다 | `-clean` 으로 재시작했는지, jar 가 `dropins` 에 있는지 확인한다. |
 | Preview 가 비어 있다 | Window > Preferences > General > Web Browser 설정과 무관하다. 에디터를 닫고 다시 열어 보고, 계속되면 `<workspace>/.metadata/.log` 를 개발자에게 전달한다. |
+| Windows 에서 Preview 에 브라우저를 Edge 로 변경하라는 안내(IE 모드)가 나온다 | [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)(Evergreen. 인터넷이 안 되는 PC 는 Standalone Installer)을 설치하고 Eclipse 를 다시 시작한다. 이미 설치했다면 Error Log 를 확인한다. |
 | Eclipse 버전이 낮다는 오류 | Eclipse 4.33(2024-09) 이상으로 업그레이드한다. |
 | 로그 위치 | `<workspace>/.metadata/.log` (Window > Show View > Error Log 에서도 확인 가능) |

@@ -72,6 +72,7 @@ All you need is a single jar file from the developer. No source code, Maven, or 
 
 - Eclipse 4.33 (2024-09) or later (any standard distribution, such as Eclipse IDE for Java Developers)
 - A JRE/JDK 17 or later to run Eclipse (a requirement of Eclipse 4.33 itself)
+- Windows only: the [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) for the Preview (included in Windows 11; the plug-in uses it without any `eclipse.ini` setting)
 - The distributed `com.kcube.md.kcube-markdown-viewer-<version>.jar`
 
 ## Installation (dropins)
@@ -136,10 +137,10 @@ Use this if you prefer not to touch the `dropins` folder. Eclipse downloads the 
    | Name | `KCube Markdown Viewer` |
    | Location | `jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v<version>/kcube-markdown-viewer-update-site-<version>.zip!/` |
 
-   For example, for version 1.2.0:
+   For example, for version 1.2.1:
 
    ```
-   jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v1.2.0/kcube-markdown-viewer-update-site-1.2.0.zip!/
+   jar:https://github.com/LEEJY-jpg/kcube-markdown-viewer/releases/download/v1.2.1/kcube-markdown-viewer-update-site-1.2.1.zip!/
    ```
 
    Keep the `jar:` prefix and the trailing `!/`. They tell Eclipse to read the update site straight from inside the zip.
@@ -176,5 +177,6 @@ Quit Eclipse, delete the jar from the `dropins` folder, and start Eclipse with `
 |---|---|
 | The Source/Preview tabs do not appear | Make sure you restarted with `-clean` and that the jar is in `dropins`. |
 | The Preview is blank | This is unrelated to Window > Preferences > General > Web Browser. Close and reopen the editor; if it persists, send `<workspace>/.metadata/.log` to the developer. |
+| Windows: the Preview asks you to switch the browser to Edge (IE mode) | Install the [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (Evergreen; use the Standalone Installer on a PC without internet access) and restart Eclipse. If it is already installed, check the Error Log. |
 | An error says the Eclipse version is too old | Upgrade to Eclipse 4.33 (2024-09) or later. |
 | Log location | `<workspace>/.metadata/.log` (also available via Window > Show View > Error Log) |
